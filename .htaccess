@@ -1,0 +1,22 @@
+Options -Indexes
+
+# Acesso direto a uma pasta real (ex: /uploads/media/2026/09/, /assets/)
+# e barrado pelo Options -Indexes acima antes mesmo do PHP entrar em cena
+# — sem isso o visitante veria a pagina 403 crua do Apache. Redireciona
+# pra rota que reusa a mesma pagina de erro estilizada do site.
+ErrorDocument 403 /erro-acesso-negado
+
+RewriteEngine On
+
+RewriteRule ^(\.env|\.env\.install|AGENTS\.md)$ - [F,L]
+RewriteRule ^(app|database|scripts|storage)/ - [F,L]
+
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+RewriteRule ^(.*)$ public/$1 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ public/index.php [QSA,L]
+

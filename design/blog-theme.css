@@ -1,0 +1,96 @@
+/* Tema do paulorb.dev sobre Bootstrap 5.
+   Paleta azul/cinza em custom properties, com modo claro e escuro.
+   Bootstrap fornece grid + utilities; aqui ficam cor, tipografia e os
+   componentes próprios do blog (sidebar, widgets, prose, code). */
+
+:root{--prose-font:'Inter',ui-sans-serif,system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* ---- Skin B: magazine, azul + cinza ---- */
+.blog[data-skin="b"]{--bg:#fff;--surface:#f5f7fa;--text:#141a21;--muted:#65707d;--border:#e2e7ee;--accent:#1d5fd0;--chip:#eef2f8;--code-bg:#111823}
+.blog[data-skin="b"][data-mode="dark"]{--bg:#0e1116;--surface:#151a21;--text:#e6ebf2;--muted:#8b97a6;--border:#232b35;--accent:#6da4f5;--chip:#1b222c;--code-bg:#080b10}
+
+.blog{background:var(--bg);color:var(--text);font-family:var(--prose-font);min-height:100%;-webkit-font-smoothing:antialiased}
+
+/* Os artboards têm largura fixa mas o viewport do canvas é menor, então os
+   breakpoints de viewport do Bootstrap não disparam. Fixamos os containers e
+   as colunas usadas no design para que a grid reflita a largura do artboard. */
+.blog .container,.blog .container-lg{max-width:100%;padding-left:2rem;padding-right:2rem}
+.blog .col-lg-8{flex:0 0 auto;width:66.6667%}
+.blog .col-lg-4{flex:0 0 auto;width:33.3333%}
+.blog .col-md-6,.blog .col-sm-6{flex:0 0 auto;width:50%}
+.blog .col-md-7{flex:0 0 auto;width:58.3333%}
+.blog .col-md-5{flex:0 0 auto;width:41.6667%}
+.blog .col-md-4{flex:0 0 auto;width:33.3333%}
+.blog a{color:var(--text);text-decoration:none}
+.blog a:hover{color:var(--accent)}
+.blog h1,.blog h2,.blog h3,.blog h4{font-family:var(--prose-font);letter-spacing:-.02em}
+.blog hr{border-color:var(--border);opacity:1}
+.blog .text-muted{color:var(--muted)!important}
+.blog .accent{color:var(--accent)}
+.blog .border-b{border-bottom:1px solid var(--border)}
+.blog .border-t{border-top:1px solid var(--border)}
+.blog .bg-surface{background:var(--surface)}
+.blog .num{font-variant-numeric:tabular-nums}
+
+/* Navbar */
+.blog .site-head{border-bottom:1px solid var(--border);background:var(--bg)}
+.blog .brand{font-weight:700;font-size:1.1rem;letter-spacing:-.03em;color:var(--text)}
+.blog .navlink{font-size:.875rem;color:var(--muted);padding:.25rem 0;border-bottom:1.5px solid transparent}
+.blog .navlink:hover{color:var(--text)}
+.blog .navlink.active{color:var(--text);font-weight:500;border-bottom-color:var(--accent)}
+.blog .icon-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center}
+.blog .icon-btn:hover{color:var(--text);border-color:var(--muted)}
+
+/* Chips / tags */
+.blog .chip{display:inline-block;font-size:.7rem;color:var(--muted);background:var(--chip);padding:.15rem .5rem;border-radius:3px;letter-spacing:.02em}
+.blog .chip-pill{display:inline-block;font-size:.68rem;color:var(--muted);border:1px solid var(--border);padding:.15rem .5rem;border-radius:999px;font-family:var(--mono)}
+
+/* Cover placeholder */
+.blog .cover{position:relative;overflow:hidden;background-size:14px 14px}
+.blog .cover-label{position:absolute;bottom:6px;left:9px;font-family:var(--mono);font-size:.6rem;opacity:.5;letter-spacing:.02em}
+
+/* Sidebar widgets */
+.blog .widget{border:1px solid var(--border);border-radius:6px;background:var(--surface);padding:1.15rem 1.15rem 1.25rem;margin-bottom:1.25rem}
+.blog .widget-title{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 .9rem}
+.blog .widget-list{list-style:none;margin:0;padding:0}
+.blog .widget-list li{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;padding:.42rem 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.blog .widget-list li:last-child{border-bottom:0;padding-bottom:0}
+.blog .widget-list a{flex:1;min-width:0}
+.blog .count{font-size:.72rem;color:var(--muted);background:var(--chip);border-radius:999px;padding:.05rem .45rem;font-variant-numeric:tabular-nums;flex-shrink:0}
+.blog .archive-year{font-size:.8rem;font-weight:600;color:var(--text);margin:.85rem 0 .35rem;font-variant-numeric:tabular-nums}
+.blog .archive-year:first-child{margin-top:0}
+.blog .archive-month{display:flex;justify-content:space-between;font-size:.82rem;padding:.3rem 0 .3rem .7rem;border-left:1px solid var(--border)}
+.blog .archive-month:hover{border-left-color:var(--accent)}
+.blog .recent-item{display:flex;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
+.blog .recent-item:last-child{border-bottom:0;padding-bottom:0}
+.blog .recent-thumb{width:44px;height:44px;border-radius:4px;flex-shrink:0}
+.blog .recent-title{font-size:.8rem;line-height:1.35;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.blog .recent-date{font-size:.68rem;color:var(--muted);margin-top:.15rem;font-variant-numeric:tabular-nums}
+.blog .searchbox{display:flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;background:var(--bg)}
+.blog .searchbox input{flex:1;border:0;background:transparent;color:var(--text);font-size:.85rem;padding:.45rem .6rem;outline:none;min-width:0}
+.blog .searchbox input::placeholder{color:var(--muted)}
+.blog .searchbox button{border:0;background:transparent;color:var(--muted);padding:0 .6rem}
+
+/* Post list (A) */
+.blog .post-row{display:flex;gap:1.25rem;padding:1.5rem 0;border-bottom:1px solid var(--border)}
+.blog .post-row h2{font-size:1.3rem;font-weight:600;line-height:1.25;margin:0 0 .5rem}
+.blog .post-row p{font-size:.9rem;line-height:1.55;color:var(--muted);margin:0 0 .7rem}
+
+/* Prose */
+.blog .prose{font-size:1.05rem;line-height:1.75}
+.blog .prose p{margin:0 0 1.25rem}
+.blog .prose h2{font-size:1.4rem;font-weight:600;margin:2.2rem 0 .9rem}
+.blog .prose blockquote{margin:1.6rem 0;padding:.75rem 1.25rem;border-left:3px solid var(--accent);color:var(--muted);font-style:italic}
+.blog .codeblock{background:var(--code-bg);color:#e6e1d6;border-radius:6px;padding:1rem 1.15rem;margin:1.25rem 0;font-family:var(--mono);font-size:.82rem;line-height:1.6;overflow:auto}
+.blog .codeblock .lang{font-size:.62rem;opacity:.5;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem}
+.blog .codeblock pre{margin:0;white-space:pre}
+
+/* Comments */
+.blog .comment{display:flex;gap:.85rem;padding:.9rem 0;border-bottom:1px solid var(--border)}
+.blog .avatar{width:32px;height:32px;border-radius:50%;background:var(--chip);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;flex-shrink:0}
+.blog textarea.field{width:100%;min-height:84px;padding:.75rem;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:5px;font-size:.875rem;font-family:inherit;resize:vertical;outline:none}
+.blog .btn-accent{background:var(--accent);color:#fff;border:0;border-radius:5px;padding:.45rem 1.1rem;font-size:.82rem;font-weight:600}
+.blog[data-mode="dark"] .btn-accent{color:#111}
+
+.blog .site-foot{border-top:1px solid var(--border);background:var(--surface);font-size:.78rem;color:var(--muted)}
+.blog .site-foot a{color:var(--muted)}

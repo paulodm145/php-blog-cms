@@ -1,0 +1,62 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        # UID/GID do usuário do host (paulo=1000:1000), para os arquivos
+        # criados pelo container terem o dono certo no bind mount.
+        PUID: "1000"
+        PGID: "1000"
+    container_name: blog_app
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      # Sobrepõe só o .env dentro do container com a versão de dev/docker,
+      # sem tocar no .env real do host (que hoje guarda credenciais de
+      # produção). Escritas do instalador (EnvWriter) caem direto em
+      # .env.docker no host, por ser um bind mount.
+      - ./.env.docker:/var/www/html/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - blog
+
+  db:
+    image: mysql:8.0
+    container_name: blog_db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    # Precisam bater com DB_DATABASE/DB_USERNAME/DB_PASSWORD/DB_ROOT_PASSWORD
+    # em .env.docker.
+    environment:
+      MYSQL_DATABASE: blog
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      # Volume nomeado: os dados ficam em /var/lib/docker/volumes, no disco
+      # do host, e sobrevivem a `docker compose down`, restart do container
+      # e reinicialização do computador. Só somem com `docker compose down -v`
+      # ou `docker volume rm blog_mysql_data`.
+      - blog_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - blog
+
+volumes:
+  blog_mysql_data:
+    name: blog_mysql_data
+
+networks:
+  blog:
+    driver: bridge

@@ -1,0 +1,10 @@
+.git
+.gitignore
+docs/
+design/
+storage/logs/
+public/uploads/*
+!public/uploads/.gitkeep
+node_modules/
+vendor/
+*.md

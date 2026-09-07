@@ -1,0 +1,372 @@
+/* Tema do admin — dashboard profissional em azul, sobre Bootstrap 5.
+   Sidebar cinza-escura estilo AdminLTE, fixa (offcanvas em telas pequenas)
+   + conteúdo claro. */
+
+:root {
+    --admin-bg: #f8fafc;
+    --admin-surface: #ffffff;
+    --admin-border: #e2e8f0;
+    --admin-text: #1e293b;
+    --admin-muted: #64748b;
+    --admin-primary: #2563eb;
+    --admin-primary-dark: #1d4ed8;
+    --admin-primary-light: #eff6ff;
+    --admin-sidebar-bg: #343a40;
+    --admin-sidebar-surface: #495057;
+    --admin-sidebar-text: #c2c7d0;
+    --admin-sidebar-muted: #838a91;
+    --admin-sidebar-active: #2563eb;
+
+    /* Retinta os componentes Bootstrap que usam as CSS vars do tema (5.3+). */
+    --bs-primary: var(--admin-primary);
+    --bs-primary-rgb: 37, 99, 235;
+    --bs-link-color: var(--admin-primary);
+    --bs-link-color-rgb: 37, 99, 235;
+    --bs-link-hover-color: var(--admin-primary-dark);
+    --bs-body-color: var(--admin-text);
+}
+
+body {
+    background: var(--admin-bg);
+    color: var(--admin-text);
+}
+
+a { color: var(--admin-primary); }
+a:hover { color: var(--admin-primary-dark); }
+
+/* ---- Login (fora da sidebar) ---- */
+.admin-login-shell {
+    background: var(--admin-sidebar-bg);
+    min-height: 100vh;
+}
+
+.admin-login-brand {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.admin-login-brand .accent { color: var(--admin-primary); }
+
+/* ---- Shell (sidebar + conteúdo) ---- */
+.admin-shell { display: flex; min-height: 100vh; align-items: stretch; }
+
+.admin-sidebar {
+    --bs-offcanvas-width: 260px;
+    width: 260px;
+    flex-shrink: 0;
+    /* !important necessário: o Bootstrap força background-color:transparent
+       !important no .offcanvas-lg quando ele vira sidebar fixa (>=992px). */
+    background-color: var(--admin-sidebar-bg) !important;
+    color: var(--admin-sidebar-text);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--admin-sidebar-surface);
+}
+
+.admin-sidebar .offcanvas-header { border-bottom: 1px solid var(--admin-sidebar-surface); }
+.admin-sidebar .offcanvas-title { color: #fff; }
+.admin-sidebar .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+
+.admin-brand {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: 1.4rem 1.25rem 1.1rem;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+}
+.admin-brand .accent { color: var(--admin-primary); }
+.admin-brand:hover { color: #fff; }
+
+.admin-nav { flex: 1; padding: .5rem .75rem; display: flex; flex-direction: column; gap: .15rem; overflow-y: auto; }
+
+.admin-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .65rem;
+    padding: .55rem .75rem;
+    border-radius: 6px;
+    color: var(--admin-sidebar-text);
+    font-size: .875rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+.admin-nav-link .admin-nav-icon { width: 1.1rem; text-align: center; color: var(--admin-sidebar-muted); flex-shrink: 0; }
+.admin-nav-link span.admin-nav-label { flex: 1; display: flex; align-items: center; gap: .65rem; min-width: 0; }
+.admin-nav-link:hover { background: var(--admin-sidebar-surface); color: #fff; }
+.admin-nav-link:hover .admin-nav-icon { color: #fff; }
+.admin-nav-link.active { background: var(--admin-sidebar-active); color: #fff; }
+.admin-nav-link.active .admin-nav-icon { color: #fff; }
+
+.admin-sidebar-footer { padding: 1rem .75rem 1.25rem; border-top: 1px solid var(--admin-sidebar-surface); }
+.admin-sidebar-user { color: var(--admin-sidebar-muted); font-size: .78rem; padding: 0 .25rem .6rem; overflow-wrap: anywhere; }
+
+/* ---- Área de conteúdo ---- */
+.admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: .85rem 1.25rem;
+    background: var(--admin-surface);
+    border-bottom: 1px solid var(--admin-border);
+}
+.admin-topbar-brand { font-weight: 700; color: var(--admin-text); }
+.admin-topbar-toggle { border: 1px solid var(--admin-border); background: var(--admin-surface); border-radius: 6px; padding: .35rem .6rem; }
+
+.admin-content { flex: 1; padding: 2rem; }
+
+.content-surface {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+}
+
+.error-surface {
+    margin: 4rem auto;
+    max-width: 720px;
+}
+
+.error-code {
+    color: var(--admin-muted);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.post-list article { border-color: var(--admin-border) !important; }
+.post-meta { color: var(--admin-muted); }
+.post-title-link { color: var(--admin-text); }
+.post-title-link:hover { color: var(--admin-primary); }
+
+.post-search { position: relative; }
+
+.post-search-results {
+    background: #ffffff;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    display: none;
+    left: 0;
+    max-height: 320px;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    z-index: 30;
+}
+
+.post-search-results.is-open { display: block; }
+
+.post-search-result {
+    align-items: center;
+    border-bottom: 1px solid var(--admin-border);
+    color: var(--admin-text);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    text-decoration: none;
+}
+
+.post-search-result:hover { background: var(--admin-primary-light); color: var(--admin-primary-dark); }
+.post-search-result span { font-weight: 700; }
+.post-search-result small, .post-search-empty { color: var(--admin-muted); }
+.post-search-empty { padding: 0.8rem 1rem; }
+
+.page-link { color: var(--admin-text); border-color: var(--admin-border); }
+.page-link:hover { color: var(--admin-primary-dark); background: var(--admin-primary-light); border-color: var(--admin-primary); }
+.page-item.active .page-link { background: var(--admin-primary); border-color: var(--admin-primary); color: #ffffff; }
+.page-item.disabled .page-link { color: #94a3b8; background: var(--admin-bg); }
+
+.featured-image { border: 1px solid var(--admin-border); background: var(--admin-bg); }
+
+.post-content h2, .post-content h3, .post-content h4 { margin-top: 2rem; margin-bottom: 1rem; }
+
+.post-content pre {
+    background: var(--admin-bg);
+    border: 1px solid var(--admin-border);
+    color: #1f1f1f;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    padding: 1rem;
+}
+
+.ql-snow .ql-editor pre.ql-syntax {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    padding: 1rem;
+}
+
+.post-content code { color: var(--admin-text); background: var(--admin-border); border-radius: 4px; padding: 0.1rem 0.3rem; }
+.post-content pre code { color: inherit; background: transparent; padding: 0; }
+
+.editor-surface { min-height: 320px; background: #ffffff; }
+
+/* A .row do Bootstrap estica os filhos (align-items:stretch) pra altura
+   da linha — calculada ANTES do Quill inserir a .ql-toolbar como irmã de
+   #editor via JS. O resultado: a coluna do editor fica mais baixa que o
+   conteudo real (toolbar + editor), que vaza visualmente por cima do que
+   vem depois no form (o botao Salvar, por exemplo — clicavel so depois
+   de esconder o editor, ex: alternando pra "Ver HTML"). align-self
+   tira essa coluna do stretch, sem mexer no resto do grid do admin. */
+.editor-col { align-self: flex-start; }
+
+.post-form-actions {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    bottom: 1rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+    padding: 0.75rem;
+    position: sticky;
+    z-index: 20;
+}
+
+.image-crop-frame { background: var(--admin-bg); border: 1px solid var(--admin-border); min-height: 260px; overflow: hidden; }
+.image-crop-frame img { display: block; max-width: 100%; }
+
+.featured-preview { aspect-ratio: 1200 / 520; background: var(--admin-bg); border: 1px solid var(--admin-border); overflow: hidden; }
+.featured-preview img { height: 100%; object-fit: cover; width: 100%; }
+
+.admin-reading-actions {
+    align-items: center;
+    background: var(--admin-bg);
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+}
+
+.category-select-toggle { overflow: hidden; padding-right: 2.25rem; text-overflow: ellipsis; white-space: nowrap; }
+.category-select-menu { max-height: 260px; overflow-y: auto; width: 100%; }
+.category-select-option { align-items: center; border-radius: 4px; display: flex; gap: 0.25rem; white-space: normal; }
+
+.code-block-wrapper { position: relative; margin: 1.5rem 0; }
+.code-block-wrapper pre { margin: 0; padding-top: 3rem; }
+
+.copy-code-button {
+    position: absolute; right: 0.75rem; top: 0.75rem;
+    background: var(--admin-sidebar-bg); border: 1px solid var(--admin-sidebar-bg);
+    border-radius: 4px; color: #ffffff; font-size: 0.8rem; padding: 0.25rem 0.6rem;
+}
+.copy-code-button:hover { background: var(--admin-sidebar-surface); border-color: var(--admin-sidebar-surface); }
+
+.admin-table-wrap { border: 1px solid var(--admin-border); border-radius: 8px; overflow: hidden; }
+.admin-table { background: var(--admin-surface); }
+.admin-table-head th {
+    background: var(--admin-bg);
+    border-bottom: 1px solid var(--admin-border);
+    color: var(--admin-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.admin-table tbody tr:hover { background: var(--admin-primary-light); }
+
+.status-badge { border-radius: 999px; display: inline-block; font-size: 0.76rem; font-weight: 600; padding: 0.25rem 0.65rem; }
+.status-published { background: #dcfce7; color: #166534; }
+.status-draft { background: #fef3c7; color: #92400e; }
+.status-hidden { background: #fee2e2; color: #991b1b; }
+
+.admin-actions { min-width: 260px; }
+.admin-action-link {
+    background: transparent; border: 0; color: var(--admin-muted);
+    display: inline-block; font-size: 0.82rem; font-weight: 600;
+    margin-left: 0.6rem; padding: 0; text-decoration: none;
+}
+.admin-action-link:hover { color: var(--admin-primary); text-decoration: underline; }
+.admin-action-danger { color: #b42318; }
+.admin-action-danger:hover { color: #91231a; }
+
+/* Painel inicial */
+.dash-stat {
+    display: flex; flex-direction: column; gap: .2rem; padding: 1rem 1.1rem;
+    background: var(--admin-surface); border: 1px solid var(--admin-border); border-radius: 10px;
+    text-decoration: none; color: var(--admin-text); height: 100%;
+}
+.dash-stat:hover { border-color: var(--admin-primary); color: var(--admin-text); }
+.dash-stat-value { font-size: 1.7rem; font-weight: 700; line-height: 1; }
+.dash-stat-label { font-size: .78rem; color: var(--admin-muted); }
+.dash-list li { padding: .75rem 0; border-bottom: 1px solid var(--admin-border); }
+.dash-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.dash-list-title { font-size: .88rem; font-weight: 600; color: var(--admin-text); text-decoration: none; display: block; }
+a.dash-list-title:hover { color: var(--admin-primary); }
+
+/* Biblioteca de midia */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; }
+.media-card {
+    background: var(--admin-surface); border: 1px solid var(--admin-border); border-radius: 8px;
+    padding: .5rem; display: flex; flex-direction: column; align-items: center; gap: .4rem;
+    cursor: pointer; text-align: center; overflow: hidden; position: relative;
+}
+.media-card:hover, .media-card.is-selected { border-color: var(--admin-primary); }
+.media-card.is-selected { box-shadow: 0 0 0 2px var(--admin-primary) inset; }
+.media-card img { width: 100%; height: 90px; object-fit: cover; border-radius: 4px; }
+/* > i (filho direto): so o icone generico de tipo de arquivo — sem o
+   combinator, essa regra tambem pegava os icones de download/excluir
+   dentro de .media-card-actions e ficavam gigantes, sem o fundo do botao. */
+.media-card > i { font-size: 2.4rem; color: var(--admin-muted); height: 90px; display: flex; align-items: center; }
+.media-card-name { font-size: .74rem; color: var(--admin-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.media-card-actions {
+    position: absolute; top: .35rem; right: .35rem; display: flex; gap: .3rem;
+    opacity: 0; transition: opacity .15s ease;
+}
+.media-card:hover .media-card-actions, .media-card:focus-within .media-card-actions { opacity: 1; }
+.media-card-action {
+    width: 26px; height: 26px; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, .65); color: #fff; border: 0; border-radius: 6px; font-size: .78rem; line-height: 1;
+    text-decoration: none; cursor: pointer;
+}
+.media-card-action i { font-size: inherit; height: auto; }
+.media-card-action:hover { background: var(--admin-primary); color: #fff; }
+.media-card-action-delete:hover { background: #b42318; }
+
+/* Visualizacao em lista — .media-list-item tambem carrega a classe
+   .media-card (mesmos data-* e clique/hover de sempre), so o layout visual
+   muda de card vertical pra linha horizontal. */
+.media-list { display: flex; flex-direction: column; gap: .4rem; }
+.media-list-item { flex-direction: row; align-items: center; text-align: left; gap: .75rem; padding: .5rem .75rem; }
+.media-list-thumb {
+    flex: 0 0 auto; width: 44px; height: 44px; border-radius: 6px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; background: var(--admin-bg);
+}
+.media-list-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.media-list-thumb i { font-size: 1.3rem; color: var(--admin-muted); }
+.media-list-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
+.media-list-meta { flex: 0 0 auto; font-size: .76rem; color: var(--admin-muted); min-width: 70px; text-align: right; }
+.media-list-actions { position: static; opacity: 1; flex: 0 0 auto; }
+
+/* Visualizacao agrupada por mes de envio */
+.media-groups { display: flex; flex-direction: column; gap: .5rem; }
+.media-month-group { border: 1px solid var(--admin-border); border-radius: 8px; padding: .75rem 1rem; background: var(--admin-surface); }
+.media-month-group summary { cursor: pointer; font-weight: 600; font-size: .9rem; list-style: none; }
+.media-month-group summary::-webkit-details-marker { display: none; }
+.media-month-group summary::before { content: '▸'; display: inline-block; margin-right: .4rem; transition: transform .15s ease; }
+.media-month-group[open] summary::before { transform: rotate(90deg); }
+.media-month-group .media-grid { margin-top: .75rem; }
+
+/* Galeria de imagens do projeto (admin) */
+.gallery-thumb { position: relative; width: 90px; height: 70px; border-radius: 6px; overflow: hidden; border: 1px solid var(--admin-border); }
+.gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-thumb-remove {
+    position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%;
+    background: rgba(0, 0, 0, .7); color: #fff; line-height: 1; font-size: .9rem; cursor: pointer;
+}
+.gallery-thumb-remove:hover { background: #b42318; }

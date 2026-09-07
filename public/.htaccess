@@ -1,0 +1,26 @@
+Options -Indexes
+
+# Acesso direto a uma pasta real (ex: uploads/media/2026/09/) e barrado
+# pelo Options -Indexes acima antes do PHP entrar em cena — sem isso o
+# visitante veria a pagina 403 crua do Apache. Redireciona pra rota que
+# reusa a mesma pagina de erro estilizada do site. (Duplicado do
+# .htaccess da raiz: esse arquivo e o que vale quando o document root
+# aponta direto pra public/, como no ambiente Docker local.)
+ErrorDocument 403 /erro-acesso-negado
+
+RewriteEngine On
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|jpg|jpeg|png|webp|svg|woff2?|ttf)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+</IfModule>
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+

@@ -1,0 +1,23 @@
+.env
+.env.install
+/public/uploads/
+/database/*.sql
+/vendor/
+/node_modules/
+/storage/logs/
+/.idea/
+/.vscode/
+
+/.superpowers/
+/storage/
+
+# Notas internas de planejamento (specs/plans) geradas durante o
+# desenvolvimento assistido — nao sao documentacao do projeto e citam
+# dados pessoais (e-mail, telefone de uma feature descartada) que nao
+# tem por que ir pro repositorio publico.
+/docs/superpowers/
+
+# Artefatos locais de ferramentas de IA/agentes — estado de sessao, nao
+# conteudo do projeto.
+/.claude/
+.codex
