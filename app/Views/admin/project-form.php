@@ -142,7 +142,19 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/assets/js/media-library.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/media-library.js') ?: '1' ?>"></script>
     <script>
-        Quill.register('modules/imageResize', ImageResize.default);
+        // O modulo de redimensionar imagem vem de um CDN separado, menos
+        // confiavel que o do Quill em si — se essa requisicao falhar
+        // (instabilidade de rede, bloqueador de anuncio etc.), ImageResize
+        // fica indefinido. Sem essa checagem, Quill.register() quebra e
+        // trava o script inteiro, deixando o editor inteiro morto (nem o
+        // Quill chega a inicializar). Com a checagem, so perde o recurso
+        // de redimensionar imagem — o editor continua funcionando.
+        var hasImageResize = typeof ImageResize !== 'undefined';
+
+        if (hasImageResize) {
+            Quill.register('modules/imageResize', ImageResize.default);
+        }
+
         var quill = new Quill('#editor', {
             theme: 'snow',
             modules: {
@@ -154,7 +166,7 @@
                     ['link'],
                     ['clean']
                 ],
-                imageResize: {}
+                imageResize: hasImageResize ? {} : undefined
             }
         });
 
