@@ -103,6 +103,31 @@ require dirname(__DIR__) . '/partials/site-top.php';
         </div>
     <?php endif; ?>
 <?php require dirname(__DIR__) . '/partials/site-bottom.php'; ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+<script>
+    (function () {
+        document.querySelectorAll('.prose pre code').forEach(function (block) {
+            hljs.highlightElement(block);
+            hljs.lineNumbersBlock(block);
+        });
+
+        document.querySelectorAll('.code-copy-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var code = button.closest('.code-window').querySelector('code');
+                navigator.clipboard.writeText(code.innerText).then(function () {
+                    var original = button.textContent;
+                    button.textContent = 'Copiado!';
+                    button.classList.add('copied');
+                    setTimeout(function () {
+                        button.textContent = original;
+                        button.classList.remove('copied');
+                    }, 1800);
+                });
+            });
+        });
+    })();
+</script>
 <?php if (!empty($project['gallery'])): ?>
 <script>
     (function () {
