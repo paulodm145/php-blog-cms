@@ -162,6 +162,7 @@ class ProjectRepository
     public function create(array $data): int
     {
         $values = $this->normalize($data, null);
+        $values['sort_order'] = $this->nextSortOrder();
 
         $this->database->execute(
             'INSERT INTO projects (
@@ -224,6 +225,70 @@ class ProjectRepository
     public function delete(int $id): void
     {
         $this->database->execute('UPDATE projects SET deleted_at = NOW() WHERE id = :id', ['id' => $id]);
+    }
+
+    /**
+     * IDs de todos os projetos nao excluidos, na ordem atual de sort_order —
+     * usado pelo admin pra saber a posicao global de um projeto (primeiro/
+     * ultimo) independente de paginacao ou busca, que so afetam a listagem.
+     */
+    public function orderedIdsForAdmin(): array
+    {
+        $rows = $this->database->fetchAll('SELECT id FROM projects WHERE deleted_at IS NULL ORDER BY sort_order, id');
+
+        return array_map(static function (array $row): int {
+            return (int) $row['id'];
+        }, $rows);
+    }
+
+    public function moveUp(int $id): void
+    {
+        $this->swapOrder($id, -1);
+    }
+
+    public function moveDown(int $id): void
+    {
+        $this->swapOrder($id, 1);
+    }
+
+    /**
+     * Troca a posicao do projeto $id com o vizinho na direcao indicada e
+     * regrava sort_order de 0..N-1 pra toda a lista — mesmo padrao de
+     * ResumeCertificationRepository::swap().
+     */
+    private function swapOrder(int $id, int $direction): void
+    {
+        $rows = $this->database->fetchAll('SELECT id FROM projects WHERE deleted_at IS NULL ORDER BY sort_order, id');
+        $index = null;
+
+        foreach ($rows as $position => $row) {
+            if ((int) $row['id'] === $id) {
+                $index = $position;
+                break;
+            }
+        }
+
+        $targetIndex = $index + $direction;
+
+        if ($index === null || $targetIndex < 0 || $targetIndex >= count($rows)) {
+            return;
+        }
+
+        [$rows[$index], $rows[$targetIndex]] = [$rows[$targetIndex], $rows[$index]];
+
+        foreach ($rows as $position => $row) {
+            $this->database->execute(
+                'UPDATE projects SET sort_order = :sort_order WHERE id = :id',
+                ['sort_order' => $position, 'id' => $row['id']]
+            );
+        }
+    }
+
+    private function nextSortOrder(): int
+    {
+        $row = $this->database->fetch('SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM projects WHERE deleted_at IS NULL');
+
+        return (int) $row['max_order'] + 1;
     }
 
     private function selectSql(): string

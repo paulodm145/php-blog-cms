@@ -28,6 +28,7 @@
                 <table class="table admin-table align-middle mb-0">
                     <thead class="admin-table-head">
                         <tr>
+                            <th>Ordem</th>
                             <th>Nome</th>
                             <th>Tipo</th>
                             <th>Período</th>
@@ -38,7 +39,16 @@
                     </thead>
                     <tbody>
                         <?php foreach ($projects as $project): ?>
+                            <?php $orderPosition = array_search((int) $project['id'], $orderedIds, true); ?>
                             <tr>
+                                <td class="admin-actions">
+                                    <form class="d-inline" method="post" action="/admin/projetos/<?= (int) $project['id'] ?>/mover-cima">
+                                        <button class="admin-action-link" type="submit" <?= $orderPosition === 0 ? 'disabled' : '' ?>><i class="fa-solid fa-arrow-up"></i></button>
+                                    </form>
+                                    <form class="d-inline" method="post" action="/admin/projetos/<?= (int) $project['id'] ?>/mover-baixo">
+                                        <button class="admin-action-link" type="submit" <?= $orderPosition === count($orderedIds) - 1 ? 'disabled' : '' ?>><i class="fa-solid fa-arrow-down"></i></button>
+                                    </form>
+                                </td>
                                 <td>
                                     <a class="fw-semibold text-decoration-none" href="/admin/projetos/<?= (int) $project['id'] ?>/edit">
                                         <?= htmlspecialchars($project['name'], ENT_QUOTES, 'UTF-8') ?>
@@ -70,7 +80,7 @@
                             </tr>
                         <?php endforeach; ?>
                         <?php if (count($projects) === 0): ?>
-                            <tr><td colspan="6" class="text-secondary">Nenhum projeto encontrado.</td></tr>
+                            <tr><td colspan="7" class="text-secondary">Nenhum projeto encontrado.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

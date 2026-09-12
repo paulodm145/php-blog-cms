@@ -145,6 +145,8 @@ $router->post('/admin/projetos', [AdminProjectController::class, 'store']);
 $router->get('/admin/projetos/{id}/edit', [AdminProjectController::class, 'edit']);
 $router->post('/admin/projetos/{id}/edit', [AdminProjectController::class, 'update']);
 $router->post('/admin/projetos/{id}/delete', [AdminProjectController::class, 'delete']);
+$router->post('/admin/projetos/{id}/mover-cima', [AdminProjectController::class, 'moveUp']);
+$router->post('/admin/projetos/{id}/mover-baixo', [AdminProjectController::class, 'moveDown']);
 $router->get('/admin/media', [AdminMediaController::class, 'index']);
 $router->post('/admin/media/upload', [AdminMediaController::class, 'upload']);
 $router->post('/admin/media/{id}', [AdminMediaController::class, 'updateMeta']);

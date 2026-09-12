@@ -33,6 +33,7 @@ class AdminProjectController
             'title' => 'Projetos | Admin paulorb.dev',
             'user' => Auth::user(),
             'projects' => $this->projects->paginateForAdmin($currentPage, $perPage, $search),
+            'orderedIds' => $this->projects->orderedIdsForAdmin(),
             'search' => $search,
             'currentPage' => $currentPage,
             'totalPages' => $totalPages,
@@ -111,5 +112,17 @@ class AdminProjectController
     {
         $this->projects->delete((int) $id);
         header('Location: /admin/projetos');
+    }
+
+    public function moveUp(string $id): void
+    {
+        $this->projects->moveUp((int) $id);
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/admin/projetos'));
+    }
+
+    public function moveDown(string $id): void
+    {
+        $this->projects->moveDown((int) $id);
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/admin/projetos'));
     }
 }
