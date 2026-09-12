@@ -216,6 +216,10 @@ a:hover { color: var(--admin-primary-dark); }
 
 .editor-surface { min-height: 320px; background: #ffffff; }
 
+.ql-editor table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+.ql-editor th, .ql-editor td { border: 1px solid var(--admin-border); padding: 0.4rem 0.6rem; text-align: left; }
+.ql-editor th { background: rgba(0, 0, 0, 0.04); font-weight: 600; }
+
 /* A .row do Bootstrap estica os filhos (align-items:stretch) pra altura
    da linha — calculada ANTES do Quill inserir a .ql-toolbar como irmã de
    #editor via JS. O resultado: a coluna do editor fica mais baixa que o

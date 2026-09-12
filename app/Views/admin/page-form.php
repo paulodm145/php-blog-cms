@@ -60,6 +60,7 @@
             <?php require __DIR__ . '/partials/media-library-modal.php'; ?>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+    <script src="/assets/js/quill-tables.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/quill-tables.js') ?: '1' ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/assets/js/media-library.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/media-library.js') ?: '1' ?>"></script>

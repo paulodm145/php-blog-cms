@@ -10,7 +10,8 @@ class Html
 {
     public static function postContent(string $html): string
     {
-        $allowed = '<p><br><strong><b><em><i><u><s><a><ul><ol><li><blockquote><pre><code><h2><h3><h4><img>';
+        $allowed = '<p><br><strong><b><em><i><u><s><a><ul><ol><li><blockquote><pre><code><h2><h3><h4><img>'
+            . '<table><thead><tbody><tfoot><tr><th><td>';
 
         return strip_tags($html, $allowed);
     }
