@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Core\Text;
 use App\Database\Database;
 
 class CategoryRepository
@@ -75,10 +76,13 @@ class CategoryRepository
 
     private function slugify(string $value): string
     {
-        $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
-        $value = strtolower((string) $value);
-        $value = preg_replace('/[^a-z0-9]+/', '-', $value);
-        $value = trim((string) $value, '-');
+        // iconv('UTF-8', 'ASCII//TRANSLIT', ...) depende do locale do
+        // servidor pra transliterar (á -> a); quando falha, ele so descarta
+        // o caractere acentuado (ou vira "?", que a regex tambem descarta),
+        // entao "Correção" virava "corre-o" em vez de "correcao". Text::slugify
+        // troca acentuados por seus equivalentes sem acento de forma explicita,
+        // sem depender de locale.
+        $value = Text::slugify($value);
 
         return $value !== '' ? $value : 'categoria';
     }
