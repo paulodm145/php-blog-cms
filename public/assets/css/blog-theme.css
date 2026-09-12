@@ -138,9 +138,13 @@ a.chip-pill:hover { color: var(--accent); border-color: var(--accent); }
 .prose h2 { font-size: clamp(1.2rem, 1rem + .8vw, 1.4rem); font-weight: 600; margin: 2.2rem 0 .9rem; }
 .prose blockquote { margin: 1.6rem 0; padding: .75rem 1.25rem; border-left: 3px solid var(--accent); color: var(--muted); font-style: italic; }
 .prose img { max-width: 100%; border-radius: 4px; }
-.prose table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: .95rem; }
-.prose th, .prose td { border: 1px solid var(--border, #dcdcdc); padding: .5rem .75rem; text-align: left; }
-.prose th { background: var(--surface-alt, #f3f3f3); font-weight: 600; }
+/* :not(.hljs-ln) exclui a tabela interna que o highlightjs-line-numbers.js
+   gera dentro de <pre><code> pra numerar linha de bloco de codigo — sem
+   isso, essas regras vazavam borda/padding pras celulas de numero de linha
+   e quebravam o visualizador de codigo (ver .code-window .hljs-ln-* abaixo). */
+.prose table:not(.hljs-ln) { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: .95rem; }
+.prose table:not(.hljs-ln) th, .prose table:not(.hljs-ln) td { border: 1px solid var(--border, #dcdcdc); padding: .5rem .75rem; text-align: left; }
+.prose table:not(.hljs-ln) th { background: var(--surface-alt, #f3f3f3); font-weight: 600; }
 .codeblock { background: var(--code-bg); color: #e6e1d6; border-radius: 6px; padding: 1rem 1.15rem; margin: 1.25rem 0; font-family: var(--mono); font-size: .82rem; line-height: 1.6; overflow: auto; }
 .prose code { font-family: var(--mono); }
 
