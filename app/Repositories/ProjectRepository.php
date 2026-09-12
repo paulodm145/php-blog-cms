@@ -110,9 +110,8 @@ class ProjectRepository
     }
 
     /**
-     * Listagem publica de /projetos: mais recente primeiro (por data de
-     * inicio), nao pela ordem manual do admin — nao ha UI de reordenar
-     * aqui, so em /curriculo (featuredForResume) isso importaria.
+     * Listagem publica de /projetos: segue a ordem manual escolhida no
+     * admin (setinhas em /admin/projetos), a mesma usada em /curriculo.
      */
     public function paginatePublished(int $page, int $perPage): array
     {
@@ -121,7 +120,7 @@ class ProjectRepository
         $pdo = $this->database->connection();
         $statement = $pdo->prepare(
             $this->selectSql() . ' WHERE projects.status = "published" AND projects.deleted_at IS NULL
-             ORDER BY projects.start_date DESC, projects.id DESC
+             ORDER BY projects.sort_order, projects.id
              LIMIT :limit OFFSET :offset'
         );
         $statement->bindValue(':limit', $perPage, PDO::PARAM_INT);
