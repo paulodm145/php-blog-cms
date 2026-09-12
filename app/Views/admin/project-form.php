@@ -1,7 +1,14 @@
 <?php require __DIR__ . '/partials/shell-top.php'; ?>
             <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
             <a class="text-secondary" href="/admin/projetos">Voltar para projetos</a>
-            <h1 class="h3 mt-3 mb-4"><?= $isNew ? 'Novo projeto' : 'Editar projeto' ?></h1>
+            <div class="d-flex justify-content-between align-items-center gap-3 mt-3 mb-4">
+                <h1 class="h3 mb-0"><?= $isNew ? 'Novo projeto' : 'Editar projeto' ?></h1>
+                <?php if (!$isNew && $item['status'] === 'published' && $item['slug'] !== ''): ?>
+                    <a class="btn btn-outline-secondary btn-sm" href="/projetos/<?= rawurlencode($item['slug']) ?>" target="_blank" rel="noopener">
+                        <i class="fa-solid fa-up-right-from-square me-1"></i> Ver projeto
+                    </a>
+                <?php endif; ?>
+            </div>
 
             <?php if (!$isNew && !empty($success)): ?>
                 <div class="alert alert-success">Projeto salvo com sucesso.</div>

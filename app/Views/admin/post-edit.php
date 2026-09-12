@@ -4,6 +4,11 @@
             <a class="text-secondary" href="/admin/posts">Voltar para posts</a>
             <div class="d-flex justify-content-between align-items-center gap-3 mt-3 mb-4">
                 <h1 class="h3 mb-0"><?= $isNew ? 'Novo post' : 'Editar post' ?></h1>
+                <?php if (!$isNew && $post['status'] === 'published' && $post['slug'] !== ''): ?>
+                    <a class="btn btn-outline-secondary btn-sm" href="/blog/<?= rawurlencode($post['slug']) ?>" target="_blank" rel="noopener">
+                        <i class="fa-solid fa-up-right-from-square me-1"></i> Ver post
+                    </a>
+                <?php endif; ?>
             </div>
 
             <?php if ($success): ?>

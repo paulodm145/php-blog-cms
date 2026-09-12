@@ -68,6 +68,9 @@
                                 <td><?= $post['published_at'] ? date('d/m/Y', strtotime($post['published_at'])) : '-' ?></td>
                                 <td class="text-end admin-actions">
                                     <a class="admin-action-link" href="/admin/posts/<?= (int) $post['id'] ?>/edit">Editar</a>
+                                    <?php if ($post['status'] === 'published'): ?>
+                                        <a class="admin-action-link" href="/blog/<?= rawurlencode($post['slug']) ?>" target="_blank" rel="noopener">Ver</a>
+                                    <?php endif; ?>
                                     <?php if ($post['status'] !== 'published'): ?>
                                         <a class="admin-action-link" href="/admin/posts/<?= (int) $post['id'] ?>/status/published">Publicar</a>
                                     <?php endif; ?>
