@@ -282,6 +282,21 @@ a:hover { color: var(--admin-primary-dark); }
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
+/* Cabecalho com botao de ordenar (ver admin-table.js): zera o padding do
+   <th> e deixa o botao/label interno ocupar a celula toda, pra area
+   clicavel cobrir a celula inteira — so nas tabelas que usam isso, as
+   outras (.admin-table-head sozinho) mantem o padding padrao do Bootstrap. */
+.admin-table-head-sortable th { padding: 0; }
+.admin-table-sort {
+    background: transparent; border: 0; color: inherit; cursor: pointer;
+    font: inherit; letter-spacing: inherit; text-transform: inherit;
+    padding: 0.65rem 1rem; width: 100%; text-align: left;
+    display: flex; align-items: center; gap: 0.4rem;
+}
+.admin-table-sort:hover { color: var(--admin-primary); }
+.admin-table-sort i { font-size: 0.7rem; opacity: 0.6; }
+.admin-table-sort:hover i { opacity: 1; }
+.admin-table-head-label { display: inline-block; padding: 0.65rem 1rem; }
 .admin-table tbody tr:hover { background: var(--admin-primary-light); }
 
 .status-badge { border-radius: 999px; display: inline-block; font-size: 0.76rem; font-weight: 600; padding: 0.25rem 0.65rem; }

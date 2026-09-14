@@ -264,10 +264,15 @@ class PostRepository
         return $counts;
     }
 
+    /**
+     * Lista completa (sem paginacao) pro admin — usada pela tabela com
+     * busca/ordenacao/paginacao em JS de /admin/posts, que filtra e ordena
+     * no navegador em vez de ir ao banco a cada interacao.
+     */
     public function allForAdmin(): array
     {
         return $this->database->fetchAll(
-            'SELECT posts.id, posts.title, posts.slug,
+            'SELECT posts.id, posts.title, posts.slug, posts.status,
                     COALESCE(users.name, posts.author_name) AS author_name,
                     posts.published_at,
                     ' . $this->categoryNamesSql() . ' AS category_name
@@ -276,55 +281,6 @@ class PostRepository
              WHERE posts.deleted_at IS NULL
              ORDER BY posts.published_at DESC, posts.id DESC'
         );
-    }
-
-    public function paginateForAdmin(int $page, int $perPage, string $search = ''): array
-    {
-        $page = max(1, $page);
-        $offset = ($page - 1) * $perPage;
-        $pdo = $this->database->connection();
-        $where = 'WHERE posts.deleted_at IS NULL';
-
-        if ($search !== '') {
-            $where .= ' AND posts.title LIKE :search';
-        }
-
-        $statement = $pdo->prepare(
-            'SELECT posts.id, posts.title, posts.slug,
-                    COALESCE(users.name, posts.author_name) AS author_name,
-                    posts.published_at, posts.status,
-                    ' . $this->categoryNamesSql() . ' AS category_name
-             FROM posts
-             LEFT JOIN users ON users.id = posts.author_id
-             ' . $where . '
-             ORDER BY posts.published_at DESC, posts.id DESC
-             LIMIT :limit OFFSET :offset'
-        );
-
-        if ($search !== '') {
-            $statement->bindValue(':search', '%' . $search . '%');
-        }
-
-        $statement->bindValue(':limit', $perPage, PDO::PARAM_INT);
-        $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $statement->execute();
-
-        return $statement->fetchAll();
-    }
-
-    public function countForAdmin(string $search = ''): int
-    {
-        $sql = 'SELECT COUNT(*) AS total FROM posts WHERE deleted_at IS NULL';
-        $params = [];
-
-        if ($search !== '') {
-            $sql .= ' AND title LIKE :search';
-            $params['search'] = '%' . $search . '%';
-        }
-
-        $row = $this->database->fetch($sql, $params);
-
-        return (int) ($row['total'] ?? 0);
     }
 
     public function findByIdForAdmin(int $id): ?array

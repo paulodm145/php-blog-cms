@@ -25,24 +25,13 @@ class AdminPostController
 
     public function index(): void
     {
-        $currentPage = max(1, (int) ($_GET['page'] ?? 1));
-        $search = trim($_GET['q'] ?? '');
-        $perPage = 10;
-        $totalPosts = $this->posts->countForAdmin($search);
-        $totalPages = max(1, (int) ceil($totalPosts / $perPage));
-
-        if ($currentPage > $totalPages) {
-            $currentPage = $totalPages;
-        }
+        $posts = $this->posts->allForAdmin();
 
         View::render('admin/posts', [
             'title' => 'Posts | Admin paulorb.dev',
             'user' => Auth::user(),
-            'posts' => $this->posts->paginateForAdmin($currentPage, $perPage, $search),
-            'search' => $search,
-            'currentPage' => $currentPage,
-            'totalPages' => $totalPages,
-            'totalPosts' => $totalPosts,
+            'posts' => $posts,
+            'totalPosts' => count($posts),
         ]);
     }
 
