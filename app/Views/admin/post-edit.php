@@ -88,9 +88,14 @@
                     <div class="col-12">
                         <label class="form-label" for="featured_image_upload">Imagem de destaque</label>
                         <p class="text-secondary small mb-2">
-                            Tamanho ideal: 1200 x 520 px. Envie JPG, PNG ou WebP com ate 2 MB.
+                            Tamanho ideal: 1200 x 520 px. Envie JPG, PNG ou WebP com ate 2 MB, ou escolha uma imagem ja existente na biblioteca — os dois jeitos passam pelo recorte abaixo.
                         </p>
-                        <input class="form-control" id="featured_image_upload" name="featured_image_upload" type="file" accept="image/jpeg,image/png,image/webp">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <input class="form-control" style="max-width: 22rem" id="featured_image_upload" name="featured_image_upload" type="file" accept="image/jpeg,image/png,image/webp">
+                            <button class="btn btn-sm btn-outline-secondary" type="button" id="choose-featured-image">
+                                <i class="fa-solid fa-photo-film me-1"></i> Escolher da biblioteca de mídia
+                            </button>
+                        </div>
                         <input type="hidden" name="featured_image_data" id="featured_image_data">
                         <input type="hidden" name="current_featured_image" value="<?= htmlspecialchars($post['featured_image'], ENT_QUOTES, 'UTF-8') ?>">
                         <div class="row g-3 mt-2">
@@ -264,6 +269,11 @@
         var preview = document.getElementById('featured_preview');
         var imageInput = document.getElementById('featured_image_upload');
         var croppedInput = document.getElementById('featured_image_data');
+        // Fica true tanto ao escolher um arquivo novo quanto ao escolher uma
+        // imagem da biblioteca — nos dois casos precisa exportar o recorte
+        // no submit. Sem isso (so olhando imageInput.files, como era antes),
+        // uma imagem escolhida na biblioteca nunca seria salva.
+        var featuredImageSourceChanged = false;
         var categoryButton = document.getElementById('category-dropdown-button');
         var categoryCheckboxes = document.querySelectorAll('.category-checkbox');
 
@@ -338,12 +348,27 @@
 
             cropSource.src = URL.createObjectURL(file);
             cropSource.onload = startCropper;
+            featuredImageSourceChanged = true;
+        });
+
+        document.getElementById('choose-featured-image').addEventListener('click', function () {
+            MediaLibrary.open(function (item) {
+                if (item.kind !== 'image') {
+                    alert('Escolha uma imagem na biblioteca de mídia.');
+                    return;
+                }
+
+                imageInput.value = '';
+                cropSource.src = item.url;
+                cropSource.onload = startCropper;
+                featuredImageSourceChanged = true;
+            });
         });
 
         document.getElementById('post-form').addEventListener('submit', function () {
             document.getElementById('content').value = htmlView ? editorHtmlTextarea.value : quill.root.innerHTML;
 
-            if (cropper && imageInput.files.length > 0) {
+            if (cropper && featuredImageSourceChanged) {
                 var canvas = cropper.getCroppedCanvas({
                     width: 1200,
                     height: 520,
