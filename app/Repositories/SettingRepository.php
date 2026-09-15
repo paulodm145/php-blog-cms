@@ -10,7 +10,7 @@ class SettingRepository
 
     private $defaults = [
         'site_name' => 'paulorb.dev',
-        'blog_description' => 'Engenheiro de software. Escrevo sobre IA, LLMs, Go, TypeScript e arquitetura.',
+        'blog_description' => 'Programador. Escrevo sobre PHP, IA, LLMs, Go, TypeScript e arquitetura.',
         'github_url' => '',
         'linkedin_url' => '',
         'recaptcha_site_key' => '',
