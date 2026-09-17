@@ -153,111 +153,117 @@
                         <a class="btn btn-sm btn-primary" href="/admin/curriculo/cursos/create">Adicionar</a>
                     </div>
 
-                    <?php
-                        $courseCustomView = $courseSearch !== '' || $courseSort !== '';
-                        $courseSortLink = function (string $column) use ($courseSearch, $courseSort, $courseDir): string {
-                            $nextDir = ($courseSort === $column && $courseDir === 'asc') ? 'desc' : 'asc';
-
-                            return '/admin/curriculo?' . http_build_query(array_filter([
-                                'curso_q' => $courseSearch,
-                                'curso_sort' => $column,
-                                'curso_dir' => $nextDir,
-                            ])) . '#tab-cursos';
-                        };
-                        $courseSortIcon = function (string $column) use ($courseSort, $courseDir): string {
-                            if ($courseSort !== $column) {
-                                return '';
-                            }
-
-                            return ' <i class="fa-solid fa-sort-' . ($courseDir === 'desc' ? 'down' : 'up') . '"></i>';
-                        };
-                    ?>
-
-                    <form class="row g-2 align-items-end mb-3" method="get" action="/admin/curriculo#tab-cursos">
-                        <input type="hidden" name="curso_sort" value="<?= htmlspecialchars($courseSort, ENT_QUOTES, 'UTF-8') ?>">
-                        <input type="hidden" name="curso_dir" value="<?= htmlspecialchars($courseDir, ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="row g-2 align-items-end mb-3" data-admin-table data-default-sort="start_date" data-default-dir="-1">
                         <div class="col-md-6">
-                            <label class="form-label" for="curso_q">Buscar por curso ou instituição</label>
-                            <input class="form-control" id="curso_q" name="curso_q" type="search" value="<?= htmlspecialchars($courseSearch, ENT_QUOTES, 'UTF-8') ?>">
+                            <label class="form-label" for="curso_q">Buscar</label>
+                            <input
+                                class="form-control"
+                                id="curso_q"
+                                type="search"
+                                placeholder="Curso, instituição, visibilidade..."
+                                data-table-search
+                            >
                         </div>
-                        <div class="col-md-3 d-flex gap-2">
-                            <button class="btn btn-primary" type="submit">Buscar</button>
-                            <?php if ($courseCustomView): ?>
-                                <a class="btn btn-outline-secondary" href="/admin/curriculo#tab-cursos">Limpar</a>
-                            <?php endif; ?>
+                        <div class="col-md-3">
+                            <label class="form-label" for="curso_visivel">Visível</label>
+                            <select class="form-select" id="curso_visivel" data-table-filter="status">
+                                <option value="">Todos</option>
+                                <option value="visible">Visível</option>
+                                <option value="hidden">Oculto</option>
+                            </select>
                         </div>
-                    </form>
+                        <div class="col-md-3">
+                            <label class="form-label" for="curso_page_size">Por página</label>
+                            <select class="form-select" id="curso_page_size" data-table-page-size>
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="0">Todos</option>
+                            </select>
+                        </div>
 
-                    <p class="text-secondary small mb-3">
-                        <?= (int) $courseTotal ?> curso<?= $courseTotal === 1 ? '' : 's' ?> cadastrado<?= $courseTotal === 1 ? '' : 's' ?>
-                        · Total de carga horária: <?= $courseTotalDuration !== '' ? htmlspecialchars($courseTotalDuration, ENT_QUOTES, 'UTF-8') : '0h' ?>
-                    </p>
+                        <div class="col-12">
+                            <p class="text-secondary small mb-2" data-table-info>
+                                <?= (int) $courseTotal ?> curso<?= $courseTotal === 1 ? '' : 's' ?> cadastrado<?= $courseTotal === 1 ? '' : 's' ?>
+                                · Total de carga horária: <?= $courseTotalDuration !== '' ? htmlspecialchars($courseTotalDuration, ENT_QUOTES, 'UTF-8') : '0h' ?>
+                            </p>
 
-                    <div class="table-responsive admin-table-wrap">
-                        <table class="table admin-table align-middle mb-0">
-                            <thead class="admin-table-head">
-                                <tr>
-                                    <th><a class="text-reset" href="<?= htmlspecialchars($courseSortLink('name'), ENT_QUOTES, 'UTF-8') ?>">Curso<?= $courseSortIcon('name') ?></a></th>
-                                    <th><a class="text-reset" href="<?= htmlspecialchars($courseSortLink('institution'), ENT_QUOTES, 'UTF-8') ?>">Instituição<?= $courseSortIcon('institution') ?></a></th>
-                                    <th><a class="text-reset" href="<?= htmlspecialchars($courseSortLink('start_date'), ENT_QUOTES, 'UTF-8') ?>">Período<?= $courseSortIcon('start_date') ?></a></th>
-                                    <th><a class="text-reset" href="<?= htmlspecialchars($courseSortLink('duration_minutes'), ENT_QUOTES, 'UTF-8') ?>">Carga horária<?= $courseSortIcon('duration_minutes') ?></a></th>
-                                    <th>Certificado</th>
-                                    <th>Visível</th>
-                                    <th class="text-end">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($courses as $index => $item): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= htmlspecialchars($item['institution'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= htmlspecialchars($item['period'], ENT_QUOTES, 'UTF-8') ?></td>
-                                        <td><?= $item['duration_text'] !== '' ? htmlspecialchars($item['duration_text'], ENT_QUOTES, 'UTF-8') : '-' ?></td>
-                                        <td>
-                                            <?php if (!empty($item['certificate_media_url']) || !empty($item['certificate_url'])): ?>
-                                                <i class="fa-solid fa-circle-check text-success" title="Tem certificado"></i>
-                                            <?php else: ?>
-                                                <span class="text-secondary">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <div class="form-check form-switch mb-0">
-                                                <input
-                                                    class="form-check-input course-visibility-toggle"
-                                                    type="checkbox"
-                                                    role="switch"
-                                                    data-id="<?= (int) $item['id'] ?>"
-                                                    <?= $item['visible'] ? 'checked' : '' ?>
-                                                >
-                                            </div>
-                                        </td>
-                                        <td class="text-end admin-actions">
-                                            <a class="admin-action-link" href="/admin/curriculo/cursos/<?= (int) $item['id'] ?>/edit">Editar</a>
-                                            <form class="d-inline" method="post" action="/admin/curriculo/cursos/<?= (int) $item['id'] ?>/delete" onsubmit="return confirm('Excluir este curso?');">
-                                                <button class="admin-action-link admin-action-danger" type="submit">Excluir</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php if (count($courses) === 0): ?>
-                                    <tr><td colspan="7" class="text-secondary">Nenhum curso encontrado.</td></tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+                            <div class="table-responsive admin-table-wrap">
+                                <table class="table admin-table align-middle mb-0">
+                                    <thead class="admin-table-head admin-table-head-sortable">
+                                        <tr>
+                                            <th><button type="button" class="admin-table-sort" data-sort="name">Curso <i class="fa-solid fa-sort"></i></button></th>
+                                            <th><button type="button" class="admin-table-sort" data-sort="institution">Instituição <i class="fa-solid fa-sort"></i></button></th>
+                                            <th><button type="button" class="admin-table-sort" data-sort="start_date" data-sort-type="number">Período <i class="fa-solid fa-sort-down"></i></button></th>
+                                            <th><button type="button" class="admin-table-sort" data-sort="duration_minutes" data-sort-type="number">Carga horária <i class="fa-solid fa-sort"></i></button></th>
+                                            <th><span class="admin-table-head-label">Certificado</span></th>
+                                            <th><span class="admin-table-head-label">Visível</span></th>
+                                            <th class="text-end"><span class="admin-table-head-label">Ações</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($courses as $item): ?>
+                                            <?php
+                                                $hasCertificate = !empty($item['certificate_media_url']) || !empty($item['certificate_url']);
+                                                $periodTimestamp = strtotime((string) ($item['end_date'] ?? $item['start_date'] ?? '')) ?: 0;
+                                                $visibilityLabel = $item['visible'] ? 'Visível' : 'Oculto';
+                                                $searchHaystack = mb_strtolower(implode(' ', [
+                                                    $item['name'],
+                                                    $item['institution'],
+                                                    $visibilityLabel,
+                                                ]), 'UTF-8');
+                                            ?>
+                                            <tr data-row data-status="<?= $item['visible'] ? 'visible' : 'hidden' ?>" data-search="<?= htmlspecialchars($searchHaystack, ENT_QUOTES, 'UTF-8') ?>">
+                                                <td data-col="name" data-value="<?= htmlspecialchars(mb_strtolower($item['name'], 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>
+                                                </td>
+                                                <td data-col="institution" data-value="<?= htmlspecialchars(mb_strtolower($item['institution'], 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= htmlspecialchars($item['institution'], ENT_QUOTES, 'UTF-8') ?>
+                                                </td>
+                                                <td data-col="start_date" data-value="<?= $periodTimestamp ?>">
+                                                    <?= htmlspecialchars($item['period'], ENT_QUOTES, 'UTF-8') ?>
+                                                </td>
+                                                <td data-col="duration_minutes" data-value="<?= (int) ($item['duration_minutes'] ?? 0) ?>">
+                                                    <?= $item['duration_text'] !== '' ? htmlspecialchars($item['duration_text'], ENT_QUOTES, 'UTF-8') : '-' ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($hasCertificate): ?>
+                                                        <i class="fa-solid fa-circle-check text-success" title="Tem certificado"></i>
+                                                    <?php else: ?>
+                                                        <span class="text-secondary">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <div class="form-check form-switch mb-0">
+                                                        <input
+                                                            class="form-check-input course-visibility-toggle"
+                                                            type="checkbox"
+                                                            role="switch"
+                                                            data-id="<?= (int) $item['id'] ?>"
+                                                            <?= $item['visible'] ? 'checked' : '' ?>
+                                                        >
+                                                    </div>
+                                                </td>
+                                                <td class="text-end admin-actions">
+                                                    <a class="admin-action-link" href="/admin/curriculo/cursos/<?= (int) $item['id'] ?>/edit">Editar</a>
+                                                    <form class="d-inline" method="post" action="/admin/curriculo/cursos/<?= (int) $item['id'] ?>/delete" onsubmit="return confirm('Excluir este curso?');">
+                                                        <button class="admin-action-link admin-action-danger" type="submit">Excluir</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <tr data-table-empty hidden>
+                                            <td colspan="7" class="text-secondary">Nenhum curso encontrado.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <nav class="pt-3" aria-label="Paginação administrativa de cursos">
+                                <ul class="pagination justify-content-center mb-0" data-table-pager></ul>
+                            </nav>
+                        </div>
                     </div>
-                    <?php
-                        $currentPage = $coursePage;
-                        $totalPages = $courseTotalPages;
-                        $pageHref = function (int $page) use ($courseSearch, $courseSort, $courseDir): string {
-                            return '/admin/curriculo?' . http_build_query(array_filter([
-                                'curso_q' => $courseSearch,
-                                'curso_sort' => $courseSort,
-                                'curso_dir' => $courseDir,
-                                'curso_page' => $page,
-                            ])) . '#tab-cursos';
-                        };
-                        require __DIR__ . '/partials/pagination.php';
-                    ?>
                 </div>
 
                 <div class="tab-pane fade" id="tab-certificacoes" role="tabpanel">
@@ -302,6 +308,7 @@
             </div>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="/assets/js/admin-table.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/admin-table.js') ?: '1' ?>"></script>
     <script>
         document.querySelectorAll('.course-visibility-toggle').forEach(function (toggle) {
             toggle.addEventListener('change', function () {
@@ -309,6 +316,9 @@
                 var previousState = !toggle.checked;
                 var formData = new FormData();
                 formData.append('visible', toggle.checked ? '1' : '0');
+                // Mantem o filtro "Visível" da tabela (admin-table.js) coerente
+                // sem precisar recarregar a pagina depois de alternar o switch.
+                var row = toggle.closest('tr[data-row]');
 
                 toggle.disabled = true;
 
@@ -320,6 +330,10 @@
                         return response.json();
                     })
                     .then(function () {
+                        if (row) {
+                            row.setAttribute('data-status', toggle.checked ? 'visible' : 'hidden');
+                        }
+
                         Swal.fire({
                             toast: true,
                             position: 'top-end',

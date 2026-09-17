@@ -32,17 +32,7 @@ class AdminResumeController
 
     public function edit(): void
     {
-        $courseSearch = trim($_GET['curso_q'] ?? '');
-        $courseSort = trim($_GET['curso_sort'] ?? '');
-        $courseDir = ($_GET['curso_dir'] ?? '') === 'desc' ? 'desc' : 'asc';
-        $coursePage = max(1, (int) ($_GET['curso_page'] ?? 1));
-        $coursePerPage = 10;
-        $courseTotal = $this->courses->countForAdmin($courseSearch);
-        $courseTotalPages = max(1, (int) ceil($courseTotal / $coursePerPage));
-
-        if ($coursePage > $courseTotalPages) {
-            $coursePage = $courseTotalPages;
-        }
+        $courses = $this->courses->allForAdmin();
 
         View::render('admin/resume', [
             'title' => 'Currículo | Admin paulorb.dev',
@@ -50,13 +40,8 @@ class AdminResumeController
             'settings' => $this->settings->all(),
             'experience' => $this->experience->all(),
             'education' => $this->education->all(),
-            'courses' => $this->courses->paginateForAdmin($coursePage, $coursePerPage, $courseSearch, $courseSort, $courseDir),
-            'courseSearch' => $courseSearch,
-            'courseSort' => $courseSort,
-            'courseDir' => $courseDir,
-            'coursePage' => $coursePage,
-            'courseTotalPages' => $courseTotalPages,
-            'courseTotal' => $courseTotal,
+            'courses' => $courses,
+            'courseTotal' => count($courses),
             'courseTotalDuration' => Text::duration($this->courses->totalDurationMinutes()),
             'certifications' => $this->certifications->all(),
             'success' => ($_GET['saved'] ?? '') === '1',

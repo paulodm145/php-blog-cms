@@ -14,16 +14,6 @@ class ResumeCourseRepository
         $this->database = $database ?: new Database();
     }
 
-    private const SORTABLE_COLUMNS = [
-        'name' => 'resume_courses.name',
-        'institution' => 'resume_courses.institution',
-        // "Período" ordena pela data de conclusao (end_date; cursos sem
-        // data de termino usam start_date), nao só start_date — mesmo
-        // criterio da ordem padrao (ver paginateForAdmin/all()).
-        'start_date' => 'COALESCE(resume_courses.end_date, resume_courses.start_date)',
-        'duration_minutes' => 'resume_courses.duration_minutes',
-    ];
-
     /**
      * So os cursos visiveis, em ordem cronologica pela data de conclusao
      * (end_date; cursos sem data de termino usam start_date), do mais
@@ -41,58 +31,21 @@ class ResumeCourseRepository
         );
     }
 
-    public function paginateForAdmin(int $page, int $perPage, string $search, string $sortColumn, string $sortDir): array
+    /**
+     * Lista completa (sem paginacao, visiveis e ocultos) pro admin — usada
+     * pela tabela com busca/ordenacao/paginacao em JS de /admin/curriculo
+     * (aba Cursos), que filtra e ordena no navegador em vez de ir ao banco
+     * a cada interacao. Mesmo padrao de PostRepository::allForAdmin().
+     */
+    public function allForAdmin(): array
     {
-        $page = max(1, $page);
-        $offset = ($page - 1) * $perPage;
-        $pdo = $this->database->connection();
-        $where = '';
-        $params = [];
-
-        if ($search !== '') {
-            $where = ' WHERE resume_courses.name LIKE :search OR resume_courses.institution LIKE :search2';
-            $params['search'] = '%' . $search . '%';
-            $params['search2'] = '%' . $search . '%';
-        }
-
-        if (isset(self::SORTABLE_COLUMNS[$sortColumn])) {
-            $orderBy = self::SORTABLE_COLUMNS[$sortColumn] . ' ' . ($sortDir === 'desc' ? 'DESC' : 'ASC') . ', resume_courses.id';
-        } else {
-            // Sem coluna escolhida: ordem cronologica pela data de
-            // conclusao, do mais recente pro mais antigo — e a ordem
-            // "natural" que faz mais sentido pra quem le a lista.
-            $orderBy = 'COALESCE(resume_courses.end_date, resume_courses.start_date) DESC, resume_courses.id DESC';
-        }
-
-        $statement = $pdo->prepare(
-            $this->selectSql() . $where . ' ORDER BY ' . $orderBy . ' LIMIT :limit OFFSET :offset'
+        return array_map(
+            [$this, 'withComputedFields'],
+            $this->database->fetchAll(
+                $this->selectSql() . '
+                 ORDER BY COALESCE(resume_courses.end_date, resume_courses.start_date) DESC, resume_courses.id DESC'
+            )
         );
-
-        foreach ($params as $key => $value) {
-            $statement->bindValue($key, $value);
-        }
-
-        $statement->bindValue(':limit', $perPage, \PDO::PARAM_INT);
-        $statement->bindValue(':offset', $offset, \PDO::PARAM_INT);
-        $statement->execute();
-
-        return array_map([$this, 'withComputedFields'], $statement->fetchAll());
-    }
-
-    public function countForAdmin(string $search): int
-    {
-        $sql = 'SELECT COUNT(*) AS total FROM resume_courses';
-        $params = [];
-
-        if ($search !== '') {
-            $sql .= ' WHERE name LIKE :search OR institution LIKE :search2';
-            $params['search'] = '%' . $search . '%';
-            $params['search2'] = '%' . $search . '%';
-        }
-
-        $row = $this->database->fetch($sql, $params);
-
-        return (int) ($row['total'] ?? 0);
     }
 
     /**
@@ -165,7 +118,7 @@ class ResumeCourseRepository
     /**
      * sort_order nao controla mais a ordem de exibicao dos cursos (que
      * agora e sempre cronologica pela data de conclusao — ver all() e
-     * paginateForAdmin()); a coluna so continua existindo pra manter o
+     * allForAdmin()); a coluna so continua existindo pra manter o
      * schema/insercao estaveis, sem reordenamento manual (setas) na UI.
      */
     private function nextSortOrder(): int
