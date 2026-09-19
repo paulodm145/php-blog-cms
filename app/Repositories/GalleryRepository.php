@@ -152,6 +152,52 @@ class GalleryRepository
         return $result;
     }
 
+    /**
+     * Procura todo [@slug@] em $html e troca pela grade de miniaturas da
+     * galeria correspondente. Slug que nao corresponde a galeria nenhuma:
+     * some sem deixar rastro pro visitante comum; quando $isAdmin (post/
+     * projeto sendo visto por quem esta logado), vira um aviso discreto —
+     * ajuda a notar um slug digitado errado sem expor isso pro publico.
+     */
+    public function expandShortcodes(string $html, bool $isAdmin): string
+    {
+        if (strpos($html, '[@') === false) {
+            return $html;
+        }
+
+        preg_match_all('/\[@([a-z0-9\-]+)@\]/', $html, $matches);
+        $slugs = array_unique($matches[1]);
+
+        if (count($slugs) === 0) {
+            return $html;
+        }
+
+        $galleries = $this->findManyBySlugsForRender($slugs);
+
+        foreach ($matches[0] as $index => $placeholder) {
+            $slug = $matches[1][$index];
+            $replacement = '';
+
+            if (isset($galleries[$slug])) {
+                $replacement = $this->renderGrid($slug, $galleries[$slug]['photos']);
+            } elseif ($isAdmin) {
+                $replacement = '<p class="text-secondary small">[galeria "' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '" não encontrada]</p>';
+            }
+
+            $html = str_replace($placeholder, $replacement, $html);
+        }
+
+        return $html;
+    }
+
+    private function renderGrid(string $galleryKey, array $photos): string
+    {
+        ob_start();
+        require dirname(__DIR__) . '/Views/partials/gallery-grid.php';
+
+        return ob_get_clean();
+    }
+
     public function create(array $data): int
     {
         $values = $this->normalize($data, null);

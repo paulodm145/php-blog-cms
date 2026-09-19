@@ -2,12 +2,15 @@
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Env;
 use App\Core\ErrorPage;
+use App\Core\Html;
 use App\Core\Sidebar;
 use App\Core\View;
 use App\Repositories\CategoryRepository;
 use App\Repositories\CommentRepository;
+use App\Repositories\GalleryRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\SettingRepository;
 use App\Repositories\TagRepository;
@@ -136,6 +139,9 @@ class BlogController
         $imageUrl = $appUrl . ($hasImage ? $post['featured_image'] : '/assets/images/og-default.png');
         $publishedIso = $post['published_at'] ? date('c', strtotime($post['published_at'])) : null;
 
+        $content = Html::renderPostContent($post['content']);
+        $content = (new GalleryRepository())->expandShortcodes($content, Auth::check());
+
         View::render('site/post', [
             'title' => $post['title'] . ' | ' . $this->settings['site_name'],
             'description' => $post['excerpt'] ?: $post['title'],
@@ -145,6 +151,7 @@ class BlogController
             'image' => $post['featured_image'],
             'ogType' => 'article',
             'post' => $post,
+            'content' => $content,
             'comments' => $comments->approvedForPost((int) $post['id']),
             'related' => $this->posts->randomExcluding((int) $post['id'], 2),
             'sidebar' => Sidebar::data(),

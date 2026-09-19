@@ -1,7 +1,6 @@
 <?php
 
 use App\Core\Auth;
-use App\Core\Html;
 use App\Core\Text;
 
 $hasImage = !empty($post['featured_image']) && $post['featured_image'] !== '/assets/images/blog-feature.svg';
@@ -46,7 +45,7 @@ require dirname(__DIR__) . '/partials/site-top.php';
                         <img src="<?= htmlspecialchars($post['featured_image'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($post['title'], ENT_QUOTES, 'UTF-8') ?>">
                     </div>
                 <?php endif; ?>
-                <div class="prose"><?= Html::renderPostContent((string) $post['content']) ?></div>
+                <div class="prose"><?= $content ?></div>
 
                 <section class="mt-5 pt-4 border-t" id="comentarios">
                     <h3 class="widget-title">Comentários (<?= count($comments) ?>)</h3>

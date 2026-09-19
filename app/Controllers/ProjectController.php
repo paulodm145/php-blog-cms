@@ -2,11 +2,13 @@
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Env;
 use App\Core\ErrorPage;
 use App\Core\Html;
 use App\Core\Sidebar;
 use App\Core\View;
+use App\Repositories\GalleryRepository;
 use App\Repositories\ProjectRepository;
 use App\Repositories\SettingRepository;
 
@@ -45,6 +47,9 @@ class ProjectController
         $imageUrl = !empty($project['cover_url']) ? $appUrl . $project['cover_url'] : $appUrl . '/assets/images/og-default.png';
         $modifiedIso = date('c', strtotime($project['updated_at']));
 
+        $content = Html::renderPostContent($project['content']);
+        $content = (new GalleryRepository())->expandShortcodes($content, Auth::check());
+
         View::render('site/project', [
             'title' => $project['name'] . ' | ' . $this->settings['site_name'],
             'description' => $project['tagline'] ?: $project['name'],
@@ -54,7 +59,7 @@ class ProjectController
             'image' => $project['cover_url'] ?: null,
             'ogType' => 'article',
             'project' => $project,
-            'content' => Html::renderPostContent($project['content']),
+            'content' => $content,
             'sidebar' => Sidebar::data(),
             'jsonLd' => [
                 '@context' => 'https://schema.org',
