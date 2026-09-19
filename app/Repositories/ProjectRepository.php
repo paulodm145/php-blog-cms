@@ -71,6 +71,7 @@ class ProjectRepository
 
         $project = $this->withComputedFields($row);
         $project['gallery'] = $this->galleryFor($id);
+        $project['source_links'] = $this->sourceLinksFor($id);
 
         return $project;
     }
@@ -88,6 +89,7 @@ class ProjectRepository
 
         $project = $this->withComputedFields($row);
         $project['gallery'] = $this->galleryFor((int) $row['id']);
+        $project['source_links'] = $this->sourceLinksFor((int) $row['id']);
 
         return $project;
     }
@@ -105,6 +107,22 @@ class ProjectRepository
              INNER JOIN media ON media.id = project_images.media_id AND media.deleted_at IS NULL
              WHERE project_images.project_id = :project_id
              ORDER BY project_images.sort_order',
+            ['project_id' => $projectId]
+        );
+    }
+
+    /**
+     * Links de repositorio de um projeto (0, 1 ou varios — ex: backend e
+     * frontend separados), na ordem em que foram adicionados — mesma
+     * logica de galleryFor(), so buscada nas leituras de um projeto so.
+     */
+    private function sourceLinksFor(int $projectId): array
+    {
+        return $this->database->fetchAll(
+            'SELECT id, label, url
+             FROM project_links
+             WHERE project_id = :project_id
+             ORDER BY sort_order',
             ['project_id' => $projectId]
         );
     }
@@ -166,16 +184,17 @@ class ProjectRepository
         $this->database->execute(
             'INSERT INTO projects (
                 name, slug, tagline, content, cover_media_id, technologies, role, project_type,
-                live_url, source_url, start_date, end_date, featured, status, sort_order
+                live_url, start_date, end_date, featured, status, sort_order
              ) VALUES (
                 :name, :slug, :tagline, :content, :cover_media_id, :technologies, :role, :project_type,
-                :live_url, :source_url, :start_date, :end_date, :featured, :status, :sort_order
+                :live_url, :start_date, :end_date, :featured, :status, :sort_order
              )',
             $values
         );
 
         $id = (int) $this->database->connection()->lastInsertId();
         $this->syncGallery($id, $data['gallery_media_ids'] ?? '');
+        $this->syncSourceLinks($id, $data['source_links_label'] ?? [], $data['source_links_url'] ?? []);
 
         return $id;
     }
@@ -190,13 +209,14 @@ class ProjectRepository
             'UPDATE projects
              SET name = :name, slug = :slug, tagline = :tagline, content = :content,
                  cover_media_id = :cover_media_id, technologies = :technologies, role = :role,
-                 project_type = :project_type, live_url = :live_url, source_url = :source_url,
+                 project_type = :project_type, live_url = :live_url,
                  start_date = :start_date, end_date = :end_date, featured = :featured, status = :status
              WHERE id = :id',
             $values
         );
 
         $this->syncGallery($id, $data['gallery_media_ids'] ?? '');
+        $this->syncSourceLinks($id, $data['source_links_label'] ?? [], $data['source_links_url'] ?? []);
     }
 
     /**
@@ -218,6 +238,44 @@ class ProjectRepository
                 'INSERT INTO project_images (project_id, media_id, sort_order) VALUES (:project_id, :media_id, :sort_order)',
                 ['project_id' => $projectId, 'media_id' => $mediaId, 'sort_order' => $position]
             );
+        }
+    }
+
+    /**
+     * Recria as linhas de project_links a partir dos dois arrays paralelos
+     * do formulario (rotulo e URL, na mesma posicao) — mesmo padrao de
+     * sincronizacao de syncGallery(). Linhas com URL vazia sao descartadas
+     * (um rotulo preenchido sem URL nao gera link nenhum); rotulo vazio
+     * vira NULL, pra site/project.php cair no texto padrao "Ver código".
+     */
+    private function syncSourceLinks(int $projectId, array $labels, array $urls): void
+    {
+        $this->database->execute(
+            'DELETE FROM project_links WHERE project_id = :project_id',
+            ['project_id' => $projectId]
+        );
+
+        $position = 0;
+
+        foreach ($urls as $index => $url) {
+            $url = trim((string) $url);
+
+            if ($url === '') {
+                continue;
+            }
+
+            $label = trim((string) ($labels[$index] ?? ''));
+
+            $this->database->execute(
+                'INSERT INTO project_links (project_id, label, url, sort_order) VALUES (:project_id, :label, :url, :sort_order)',
+                [
+                    'project_id' => $projectId,
+                    'label' => $label !== '' ? $label : null,
+                    'url' => $url,
+                    'sort_order' => $position,
+                ]
+            );
+            $position++;
         }
     }
 
@@ -340,7 +398,6 @@ class ProjectRepository
             'role' => trim((string) ($data['role'] ?? '')) !== '' ? trim((string) $data['role']) : null,
             'project_type' => in_array($projectType, ['personal', 'professional', 'freelance'], true) ? $projectType : null,
             'live_url' => trim((string) ($data['live_url'] ?? '')) !== '' ? trim((string) $data['live_url']) : null,
-            'source_url' => trim((string) ($data['source_url'] ?? '')) !== '' ? trim((string) $data['source_url']) : null,
             'start_date' => $startDate !== '' ? $startDate : null,
             'end_date' => $endDate !== '' ? $endDate : null,
             'featured' => !empty($data['featured']) ? 1 : 0,

@@ -54,13 +54,27 @@
                         <input class="form-control" id="end_date" name="end_date" type="date" value="<?= htmlspecialchars((string) ($item['end_date'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                         <p class="text-secondary small mt-1 mb-0">Deixe em branco se ainda está em andamento.</p>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label class="form-label" for="live_url">URL ao vivo</label>
                         <input class="form-control" id="live_url" name="live_url" type="url" placeholder="https://..." value="<?= htmlspecialchars((string) ($item['live_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label" for="source_url">URL do código</label>
-                        <input class="form-control" id="source_url" name="source_url" type="url" placeholder="https://github.com/..." value="<?= htmlspecialchars((string) ($item['source_url'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                    <div class="col-12">
+                        <label class="form-label d-block">Repositórios</label>
+                        <p class="text-secondary small mb-2">
+                            Um projeto pode ter mais de um repositório (ex: backend e frontend separados). O rótulo é opcional — sem ele, e com só um link, o botão mostra "Ver código".
+                        </p>
+                        <div id="source-link-rows" class="d-flex flex-column gap-2 mb-2">
+                            <?php foreach ($item['source_links'] ?? [] as $link): ?>
+                                <div class="source-link-row d-flex gap-2">
+                                    <input class="form-control" style="max-width: 12rem" type="text" name="source_links_label[]" placeholder="Rótulo (opcional)" value="<?= htmlspecialchars($link['label'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                    <input class="form-control" type="url" name="source_links_url[]" placeholder="https://github.com/..." value="<?= htmlspecialchars($link['url'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="button" class="btn btn-outline-danger btn-sm source-link-remove" title="Remover"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" id="add-source-link">
+                            <i class="fa-solid fa-plus me-1"></i> Adicionar repositório
+                        </button>
                     </div>
                     <div class="col-12">
                         <label class="form-label d-block">Capa</label>
@@ -286,6 +300,27 @@
         }
 
         galleryThumbsWrap.querySelectorAll('.gallery-thumb-remove').forEach(bindGalleryRemove);
+
+        var sourceLinkRowsWrap = document.getElementById('source-link-rows');
+
+        function bindSourceLinkRemove(button) {
+            button.addEventListener('click', function () {
+                button.closest('.source-link-row').remove();
+            });
+        }
+
+        document.getElementById('add-source-link').addEventListener('click', function () {
+            var row = document.createElement('div');
+            row.className = 'source-link-row d-flex gap-2';
+            row.innerHTML = '<input class="form-control" style="max-width: 12rem" type="text" name="source_links_label[]" placeholder="Rótulo (opcional)">'
+                + '<input class="form-control" type="url" name="source_links_url[]" placeholder="https://github.com/...">'
+                + '<button type="button" class="btn btn-outline-danger btn-sm source-link-remove" title="Remover"><i class="fa-solid fa-xmark"></i></button>';
+            sourceLinkRowsWrap.appendChild(row);
+            bindSourceLinkRemove(row.querySelector('.source-link-remove'));
+            row.querySelector('input[type="text"]').focus();
+        });
+
+        sourceLinkRowsWrap.querySelectorAll('.source-link-remove').forEach(bindSourceLinkRemove);
 
         document.getElementById('project-form').addEventListener('submit', function () {
             document.getElementById('content').value = htmlView ? editorHtmlTextarea.value : quill.root.innerHTML;

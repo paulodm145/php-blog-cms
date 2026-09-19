@@ -60,7 +60,7 @@ class AdminProjectController
                 'role' => '',
                 'project_type' => '',
                 'live_url' => '',
-                'source_url' => '',
+                'source_links' => [],
                 'start_date' => '',
                 'end_date' => '',
                 'featured' => 0,

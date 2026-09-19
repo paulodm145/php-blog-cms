@@ -37,18 +37,19 @@ require dirname(__DIR__) . '/partials/site-top.php';
                             <span class="opacity-50">·</span><span><?= htmlspecialchars($project['role'], ENT_QUOTES, 'UTF-8') ?></span>
                         <?php endif; ?>
                     </div>
-                    <?php if (!empty($project['live_url']) || !empty($project['source_url'])): ?>
-                        <div class="d-flex gap-2 align-items-center mt-3">
+                    <?php $sourceLinks = $project['source_links'] ?? []; ?>
+                    <?php if (!empty($project['live_url']) || count($sourceLinks) > 0): ?>
+                        <div class="d-flex gap-2 align-items-center flex-wrap mt-3">
                             <?php if (!empty($project['live_url'])): ?>
                                 <a class="btn-accent" style="display:inline-flex;align-items:center;gap:.4rem" href="<?= htmlspecialchars($project['live_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
                                     Ver projeto <i class="fa-solid fa-arrow-up-right-from-square fa-2xs"></i>
                                 </a>
                             <?php endif; ?>
-                            <?php if (!empty($project['source_url'])): ?>
-                                <a class="chip-pill" href="<?= htmlspecialchars($project['source_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
-                                    <i class="fa-brands fa-github"></i> Ver código
+                            <?php foreach ($sourceLinks as $sourceLink): ?>
+                                <a class="chip-pill" href="<?= htmlspecialchars($sourceLink['url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+                                    <i class="fa-brands fa-github"></i> <?= htmlspecialchars($sourceLink['label'] !== null && $sourceLink['label'] !== '' ? $sourceLink['label'] : 'Ver código', ENT_QUOTES, 'UTF-8') ?>
                                 </a>
-                            <?php endif; ?>
+                            <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
                 </div>
