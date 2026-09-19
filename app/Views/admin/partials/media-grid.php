@@ -49,7 +49,7 @@
                 </button>
             </div>
             <?php if ($item['kind'] === 'image'): ?>
-                <img src="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+                <img src="<?= htmlspecialchars($item['thumbnail_path'] ?: $item['path'], ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
             <?php else: ?>
                 <i class="fa-solid <?= \App\Core\Html::fileIcon($item['mime_type']) ?>"></i>
             <?php endif; ?>
@@ -75,7 +75,7 @@
         >
             <div class="media-list-thumb">
                 <?php if ($item['kind'] === 'image'): ?>
-                    <img src="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+                    <img src="<?= htmlspecialchars($item['thumbnail_path'] ?: $item['path'], ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
                 <?php else: ?>
                     <i class="fa-solid <?= \App\Core\Html::fileIcon($item['mime_type']) ?>"></i>
                 <?php endif; ?>
