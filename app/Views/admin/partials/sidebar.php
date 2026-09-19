@@ -25,6 +25,7 @@ $navItems = [
     ['href' => '/admin', 'icon' => 'fa-gauge', 'label' => 'Painel', 'prefix' => '/admin'],
     ['href' => '/admin/posts', 'icon' => 'fa-newspaper', 'label' => 'Posts', 'prefix' => '/admin/posts'],
     ['href' => '/admin/media', 'icon' => 'fa-images', 'label' => 'Mídia', 'prefix' => '/admin/media'],
+    ['href' => '/admin/galerias', 'icon' => 'fa-photo-film', 'label' => 'Galerias', 'prefix' => '/admin/galerias'],
     ['href' => '/admin/categories', 'icon' => 'fa-tags', 'label' => 'Categorias', 'prefix' => '/admin/categories'],
     ['href' => '/admin/paginas', 'icon' => 'fa-file-lines', 'label' => 'Páginas', 'prefix' => '/admin/paginas'],
     ['href' => '/admin/projetos', 'icon' => 'fa-diagram-project', 'label' => 'Projetos', 'prefix' => '/admin/projetos'],

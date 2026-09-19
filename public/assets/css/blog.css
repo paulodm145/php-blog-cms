@@ -389,3 +389,14 @@ a.dash-list-title:hover { color: var(--admin-primary); }
     background: rgba(0, 0, 0, .7); color: #fff; line-height: 1; font-size: .9rem; cursor: pointer;
 }
 .gallery-thumb-remove:hover { background: #b42318; }
+.gallery-thumb[draggable="true"] { cursor: grab; }
+.gallery-thumb.dragging { opacity: .4; }
+
+/* Galerias reutilizaveis: codigo [@slug@] copiavel (listagem e form) e a
+   lista do modal "Inserir galeria" no editor. */
+.gallery-shortcode { background: var(--admin-bg); padding: .2rem .5rem; border-radius: 4px; }
+.gallery-picker-item {
+    background: transparent; border: 1px solid var(--admin-border); border-radius: 8px;
+    padding: .5rem .75rem; text-align: left; cursor: pointer; width: 100%;
+}
+.gallery-picker-item:hover { border-color: var(--admin-primary); background: var(--admin-primary-light); }
