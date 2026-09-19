@@ -69,15 +69,11 @@ require dirname(__DIR__) . '/partials/site-top.php';
                 <?php if (!empty($project['gallery'])): ?>
                     <section class="mt-5 pt-4 border-t">
                         <h3 class="widget-title mb-3">Screenshots</h3>
-                        <div class="row g-2">
-                            <?php foreach ($project['gallery'] as $index => $image): ?>
-                                <div class="col-4 col-md-3">
-                                    <button type="button" class="gallery-grid-thumb cover d-block w-100" style="height:90px" data-index="<?= (int) $index ?>" data-url="<?= htmlspecialchars($image['url'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <img src="<?= htmlspecialchars($image['url'], ENT_QUOTES, 'UTF-8') ?>" alt="">
-                                    </button>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                        <?php
+                            $galleryKey = 'project-' . $project['id'];
+                            $photos = $project['gallery'];
+                            require dirname(__DIR__) . '/partials/gallery-grid.php';
+                        ?>
                     </section>
                 <?php endif; ?>
             </div>
@@ -88,20 +84,9 @@ require dirname(__DIR__) . '/partials/site-top.php';
         </div>
     </main>
 
-    <?php if (!empty($project['gallery'])): ?>
-        <div class="modal fade" id="gallery-lightbox" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-xl">
-                <div class="modal-content bg-transparent border-0">
-                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Fechar" style="z-index:10"></button>
-                    <div class="modal-body d-flex align-items-center justify-content-center position-relative p-0">
-                        <button type="button" class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Anterior"><i class="fa-solid fa-chevron-left"></i></button>
-                        <img id="lightbox-image" src="" alt="" class="lightbox-image">
-                        <button type="button" class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Próximo"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                    <div class="text-center text-white-50 small mt-2" id="lightbox-counter"></div>
-                </div>
-            </div>
-        </div>
+    <?php $hasEmbeddedGallery = strpos($content, 'gallery-grid-thumb') !== false; ?>
+    <?php if (!empty($project['gallery']) || $hasEmbeddedGallery): ?>
+        <?php require dirname(__DIR__) . '/partials/gallery-lightbox-modal.php'; ?>
     <?php endif; ?>
 <?php require dirname(__DIR__) . '/partials/site-bottom.php'; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -129,56 +114,6 @@ require dirname(__DIR__) . '/partials/site-top.php';
         });
     })();
 </script>
-<?php if (!empty($project['gallery'])): ?>
-<script>
-    (function () {
-        var thumbs = document.querySelectorAll('.gallery-grid-thumb');
-
-        if (thumbs.length === 0) {
-            return;
-        }
-
-        var urls = Array.prototype.map.call(thumbs, function (thumb) {
-            return thumb.getAttribute('data-url');
-        });
-        var current = 0;
-        var modalEl = document.getElementById('gallery-lightbox');
-        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        var image = document.getElementById('lightbox-image');
-        var counter = document.getElementById('lightbox-counter');
-
-        function show(index) {
-            current = (index + urls.length) % urls.length;
-            image.src = urls[current];
-            counter.textContent = (current + 1) + ' / ' + urls.length;
-        }
-
-        thumbs.forEach(function (thumb) {
-            thumb.addEventListener('click', function () {
-                show(parseInt(thumb.getAttribute('data-index'), 10));
-                modal.show();
-            });
-        });
-
-        document.getElementById('lightbox-prev').addEventListener('click', function () {
-            show(current - 1);
-        });
-
-        document.getElementById('lightbox-next').addEventListener('click', function () {
-            show(current + 1);
-        });
-
-        document.addEventListener('keydown', function (event) {
-            if (!modalEl.classList.contains('show')) {
-                return;
-            }
-
-            if (event.key === 'ArrowLeft') {
-                show(current - 1);
-            } else if (event.key === 'ArrowRight') {
-                show(current + 1);
-            }
-        });
-    })();
-</script>
+<?php if (!empty($project['gallery']) || $hasEmbeddedGallery): ?>
+    <script src="/assets/js/gallery-lightbox.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/gallery-lightbox.js') ?: '1' ?>"></script>
 <?php endif; ?>

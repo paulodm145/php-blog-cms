@@ -101,14 +101,21 @@ class ProjectRepository
      */
     private function galleryFor(int $projectId): array
     {
-        return $this->database->fetchAll(
-            'SELECT media.id, media.path AS url, media.original_name AS name
+        $rows = $this->database->fetchAll(
+            'SELECT media.id, media.path AS url, media.thumbnail_path, media.original_name AS name
              FROM project_images
              INNER JOIN media ON media.id = project_images.media_id AND media.deleted_at IS NULL
              WHERE project_images.project_id = :project_id
              ORDER BY project_images.sort_order',
             ['project_id' => $projectId]
         );
+
+        return array_map(static function (array $row): array {
+            $row['thumbnail_url'] = $row['thumbnail_path'] ?: $row['url'];
+            unset($row['thumbnail_path']);
+
+            return $row;
+        }, $rows);
     }
 
     /**

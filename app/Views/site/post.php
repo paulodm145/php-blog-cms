@@ -112,9 +112,16 @@ require dirname(__DIR__) . '/partials/site-top.php';
             </div>
         </section>
     <?php endif; ?>
+    <?php $hasEmbeddedGallery = strpos($content, 'gallery-grid-thumb') !== false; ?>
+    <?php if ($hasEmbeddedGallery): ?>
+        <?php require dirname(__DIR__) . '/partials/gallery-lightbox-modal.php'; ?>
+    <?php endif; ?>
 <?php require dirname(__DIR__) . '/partials/site-bottom.php'; ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+<?php if ($hasEmbeddedGallery): ?>
+    <script src="/assets/js/gallery-lightbox.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/gallery-lightbox.js') ?: '1' ?>"></script>
+<?php endif; ?>
 <script>
     (function () {
         document.querySelectorAll('.prose pre code').forEach(function (block) {
