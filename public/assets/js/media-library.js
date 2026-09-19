@@ -303,10 +303,17 @@
                 return;
             }
 
-            var link = event.target.closest ? event.target.closest('.page-num, .page-btn') : null;
+            var link = event.target.closest ? event.target.closest('.page-link') : null;
 
             if (link && link.tagName === 'A') {
                 event.preventDefault();
+
+                var pageItem = link.closest('.page-item');
+
+                if (pageItem && (pageItem.classList.contains('disabled') || pageItem.classList.contains('active'))) {
+                    return;
+                }
+
                 state.page = pageFromLink(link);
                 refresh();
             }
@@ -498,7 +505,15 @@
 
         searchInput.value = '';
         kindSelect.value = '';
-        state = { q: '', kind: '', page: 1 };
+        // Muta o objeto em vez de reatribuir `state` a um objeto novo — o
+        // handler de clique da paginacao (bindGridClicks, logo acima) ja
+        // recebeu a referencia do objeto original como parametro; recriar
+        // `state` aqui deixava esse handler escrevendo num objeto orfao
+        // que refresh()/fetchGrid() nunca liam, entao a pagina clicada
+        // nunca surtia efeito (sempre recarregava a pagina 1).
+        state.q = '';
+        state.kind = '';
+        state.page = 1;
         selected = null;
         insertButton.disabled = true;
 
