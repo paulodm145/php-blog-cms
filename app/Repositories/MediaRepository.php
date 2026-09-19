@@ -41,7 +41,7 @@ class MediaRepository
         }
 
         $rows = $this->database->fetchAll(
-            'SELECT id, file_name, original_name, path, mime_type, kind, size, width, height,
+            'SELECT id, file_name, original_name, path, thumbnail_path, mime_type, kind, size, width, height,
                     title, alt_text, uploaded_by, created_at
              FROM media
              ' . $where . '
@@ -91,7 +91,7 @@ class MediaRepository
         }
 
         $statement = $pdo->prepare(
-            'SELECT id, file_name, original_name, path, mime_type, kind, size, width, height,
+            'SELECT id, file_name, original_name, path, thumbnail_path, mime_type, kind, size, width, height,
                     title, alt_text, uploaded_by, created_at
              FROM media
              ' . $where . '
@@ -133,7 +133,7 @@ class MediaRepository
     public function findByIdForAdmin(int $id): ?array
     {
         return $this->database->fetch(
-            'SELECT id, file_name, original_name, path, mime_type, kind, size, width, height,
+            'SELECT id, file_name, original_name, path, thumbnail_path, mime_type, kind, size, width, height,
                     title, alt_text, uploaded_by, created_at
              FROM media
              WHERE id = :id AND deleted_at IS NULL
@@ -147,16 +147,17 @@ class MediaRepository
         $pdo = $this->database->connection();
         $this->database->execute(
             'INSERT INTO media (
-                file_name, original_name, path, mime_type, kind, size, width, height,
+                file_name, original_name, path, thumbnail_path, mime_type, kind, size, width, height,
                 title, alt_text, uploaded_by
              ) VALUES (
-                :file_name, :original_name, :path, :mime_type, :kind, :size, :width, :height,
+                :file_name, :original_name, :path, :thumbnail_path, :mime_type, :kind, :size, :width, :height,
                 :title, :alt_text, :uploaded_by
              )',
             [
                 'file_name' => $data['file_name'],
                 'original_name' => $data['original_name'],
                 'path' => $data['path'],
+                'thumbnail_path' => $data['thumbnail_path'] ?? null,
                 'mime_type' => $data['mime_type'],
                 'kind' => $data['kind'],
                 'size' => $data['size'],

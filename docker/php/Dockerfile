@@ -22,9 +22,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libzip-dev \
         libonig-dev \
         libxml2-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
+        libwebp-dev \
+        libfreetype6-dev \
         default-mysql-client \
     && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql mysqli mbstring dom zip opcache \
+    && docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-webp-dir=/usr \
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_mysql mysqli mbstring dom zip opcache gd \
     && a2enmod rewrite headers \
     && groupmod -g "${PGID}" www-data \
     && usermod -u "${PUID}" -g "${PGID}" www-data

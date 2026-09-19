@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\ImageThumbnail;
 use App\Core\View;
 use App\Repositories\MediaRepository;
 
@@ -147,6 +148,14 @@ class AdminMediaController
                 unlink($absolutePath);
             }
 
+            if (!empty($media['thumbnail_path'])) {
+                $thumbnailAbsolutePath = dirname(__DIR__, 2) . '/public' . $media['thumbnail_path'];
+
+                if (is_file($thumbnailAbsolutePath)) {
+                    unlink($thumbnailAbsolutePath);
+                }
+            }
+
             $this->media->softDeleteForAdmin((int) $id);
         }
 
@@ -246,6 +255,8 @@ class AdminMediaController
         $path = '/uploads/media/' . $year . '/' . $month . '/' . $fileName;
         $width = null;
         $height = null;
+        $thumbnailAbsolutePath = null;
+        $thumbnailPath = null;
 
         if ($kind === 'image') {
             $dimensions = @getimagesize($absolutePath);
@@ -260,6 +271,12 @@ class AdminMediaController
                 $width = $dimensions[0];
                 $height = $dimensions[1];
             }
+
+            $thumbnailAbsolutePath = ImageThumbnail::generate($absolutePath, $mimeType);
+
+            if ($thumbnailAbsolutePath !== null) {
+                $thumbnailPath = '/uploads/media/' . $year . '/' . $month . '/' . basename($thumbnailAbsolutePath);
+            }
         }
 
         try {
@@ -267,6 +284,7 @@ class AdminMediaController
                 'file_name' => $fileName,
                 'original_name' => (string) $file['name'],
                 'path' => $path,
+                'thumbnail_path' => $thumbnailPath,
                 'mime_type' => $mimeType,
                 'kind' => $kind,
                 'size' => (int) $file['size'],
@@ -276,6 +294,11 @@ class AdminMediaController
             ]);
         } catch (\Throwable $exception) {
             unlink($absolutePath);
+
+            if ($thumbnailAbsolutePath !== null && is_file($thumbnailAbsolutePath)) {
+                unlink($thumbnailAbsolutePath);
+            }
+
             throw new \RuntimeException('Não foi possível salvar o arquivo');
         }
 
