@@ -130,6 +130,9 @@
                                 <button class="btn btn-sm btn-outline-secondary" type="button" id="open-media-library">
                                     <i class="fa-solid fa-photo-film me-1"></i> Biblioteca de mídia
                                 </button>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="insert-gallery">
+                                    <i class="fa-solid fa-photo-film me-1"></i> Inserir galeria
+                                </button>
                                 <button class="btn btn-sm btn-outline-secondary" type="button" id="toggle-html-view">
                                     <i class="fa-solid fa-code me-1"></i> Ver HTML
                                 </button>
@@ -157,6 +160,17 @@
                 <form id="delete-post-form" method="post" action="/admin/posts/<?= (int) $post['id'] ?>/delete" onsubmit="return confirm('Excluir este post?');"></form>
             <?php endif; ?>
             <?php require __DIR__ . '/partials/media-library-modal.php'; ?>
+            <div class="modal fade" id="gallery-picker-modal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Inserir galeria</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="gallery-picker-list"></div>
+                    </div>
+                </div>
+            </div>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
     <script src="/assets/js/quill-tables.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/quill-tables.js') ?: '1' ?>"></script>
@@ -164,6 +178,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/assets/js/media-library.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/media-library.js') ?: '1' ?>"></script>
+    <script src="/assets/js/gallery-picker.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/gallery-picker.js') ?: '1' ?>"></script>
     <script>
         // O modulo de redimensionar imagem vem de um CDN separado, menos
         // confiavel que o do Quill em si — se essa requisicao falhar
@@ -236,6 +251,13 @@
                 }
 
                 quill.setSelection(range.index + 1);
+            });
+        });
+        document.getElementById('insert-gallery').addEventListener('click', function () {
+            GalleryPicker.open(function (slug) {
+                var range = quill.getSelection(true);
+                quill.insertText(range.index, '[@' + slug + '@]');
+                quill.setSelection(range.index + slug.length + 4);
             });
         });
         var htmlView = false;
