@@ -1,9 +1,10 @@
 /**
  * Nucleo compartilhado da biblioteca de midia: usado tanto pela tela cheia
  * (/admin/media, via MediaLibrary.mountPage) quanto pelo seletor embutido
- * no editor Quill de posts e paginas (via MediaLibrary.open). Reaproveita
- * o endpoint GET /admin/media?ajax=1 (retorna so o HTML da grade+paginacao,
- * a mesma partial usada na pagina cheia) e POST /admin/media/upload.
+ * no editor TinyMCE de posts, projetos e paginas (via MediaLibrary.open).
+ * Reaproveita o endpoint GET /admin/media?ajax=1 (retorna so o HTML da
+ * grade+paginacao, a mesma partial usada na pagina cheia) e POST
+ * /admin/media/upload.
  *
  * Mensagens usam SweetAlert2 (carregado via CDN nas paginas que incluem
  * este script) com fallback pro alert()/confirm() nativo do browser caso

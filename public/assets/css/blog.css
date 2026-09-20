@@ -201,31 +201,17 @@ a:hover { color: var(--admin-primary-dark); }
     padding: 1rem;
 }
 
-.ql-snow .ql-editor pre.ql-syntax {
-    background: #0f172a;
-    color: #e2e8f0;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    overflow-x: auto;
-    padding: 1rem;
-}
-
 .post-content code { color: var(--admin-text); background: var(--admin-border); border-radius: 4px; padding: 0.1rem 0.3rem; }
 .post-content pre code { color: inherit; background: transparent; padding: 0; }
 
 .editor-surface { min-height: 320px; background: #ffffff; }
 
-.ql-editor table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-.ql-editor th, .ql-editor td { border: 1px solid var(--admin-border); padding: 0.4rem 0.6rem; text-align: left; }
-.ql-editor th { background: rgba(0, 0, 0, 0.04); font-weight: 600; }
-
 /* A .row do Bootstrap estica os filhos (align-items:stretch) pra altura
-   da linha — calculada ANTES do Quill inserir a .ql-toolbar como irmã de
-   #editor via JS. O resultado: a coluna do editor fica mais baixa que o
-   conteudo real (toolbar + editor), que vaza visualmente por cima do que
-   vem depois no form (o botao Salvar, por exemplo — clicavel so depois
-   de esconder o editor, ex: alternando pra "Ver HTML"). align-self
+   da linha — calculada ANTES do TinyMCE inserir sua propria UI (.tox-tinymce)
+   como irma de #editor via JS. O resultado: a coluna do editor fica mais
+   baixa que o conteudo real (toolbar + editor), que vaza visualmente por
+   cima do que vem depois no form (o botao Salvar, por exemplo — clicavel
+   so depois de esconder o editor, ex: alternando pra "Ver HTML"). align-self
    tira essa coluna do stretch, sem mexer no resto do grid do admin. */
 .editor-col { align-self: flex-start; }
 

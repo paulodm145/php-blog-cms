@@ -10,8 +10,14 @@ class Html
 {
     public static function postContent(string $html): string
     {
+        // colgroup/col: o TinyMCE grava largura por coluna nessas tags ao
+        // inserir uma tabela nova (ex: <colgroup><col style="width:33%">).
+        // Sem elas na lista, strip_tags() removia so essas duas tags —
+        // a tabela em si sobrevivia intacta, so perdia a largura calculada
+        // por coluna (linhas/celulas continuavam, so as colunas voltavam a
+        // se ajustar pelo conteudo em vez do percentual definido no editor).
         $allowed = '<p><br><strong><b><em><i><u><s><a><ul><ol><li><blockquote><pre><code><h2><h3><h4><img>'
-            . '<table><thead><tbody><tfoot><tr><th><td>';
+            . '<table><thead><tbody><tfoot><tr><th><td><colgroup><col>';
 
         return strip_tags($html, $allowed);
     }

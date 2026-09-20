@@ -1,5 +1,4 @@
 <?php require __DIR__ . '/partials/shell-top.php'; ?>
-            <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
             <link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
             <a class="text-secondary" href="/admin/posts">Voltar para posts</a>
             <div class="d-flex justify-content-between align-items-center gap-3 mt-3 mb-4">
@@ -152,7 +151,7 @@
                     </div>
                     <div class="d-flex gap-2">
                         <a class="btn btn-outline-secondary" href="/admin/posts">Cancelar</a>
-                        <button class="btn btn-primary" type="submit">Salvar</button>
+                        <button class="btn btn-primary" type="submit" id="post-form-submit" disabled>Carregando editor...</button>
                     </div>
                 </div>
             </form>
@@ -172,120 +171,129 @@
                 </div>
             </div>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
-<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
-    <script src="/assets/js/quill-tables.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/quill-tables.js') ?: '1' ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@8.7.0/tinymce.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tinymce-i18n@26.9.14/langs8/pt-BR.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/assets/js/media-library.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/media-library.js') ?: '1' ?>"></script>
     <script src="/assets/js/gallery-picker.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/gallery-picker.js') ?: '1' ?>"></script>
     <script>
-        // O modulo de redimensionar imagem vem de um CDN separado, menos
-        // confiavel que o do Quill em si — se essa requisicao falhar
-        // (instabilidade de rede, bloqueador de anuncio etc.), ImageResize
-        // fica indefinido. Sem essa checagem, Quill.register() quebra e
-        // trava o script inteiro, deixando o editor inteiro morto (nem o
-        // Quill chega a inicializar). Com a checagem, so perde o recurso
-        // de redimensionar imagem — o editor continua funcionando.
-        var hasImageResize = typeof ImageResize !== 'undefined';
-
-        if (hasImageResize) {
-            Quill.register('modules/imageResize', ImageResize.default);
+        // Faz o upload de um arquivo pro endpoint de imagem do post e chama
+        // onDone(url) quando terminar — mesma logica que ja existia no
+        // handler de imagem do Quill, so extraida pra reaproveitar tanto no
+        // botao "Inserir imagem" da toolbar quanto em qualquer outro lugar
+        // que precise do mesmo fluxo.
+        function uploadContentImage(file, onDone) {
+            var formData = new FormData();
+            formData.append('image', file);
+            fetch('/admin/posts/upload-image', { method: 'POST', body: formData })
+                .then(function (response) {
+                    return response.json().then(function (payload) {
+                        if (!response.ok || !payload.url) {
+                            throw new Error(payload.error || 'Falha no envio da imagem');
+                        }
+                        onDone(payload.url);
+                    });
+                })
+                .catch(function (error) {
+                    alert(error.message || 'Falha no envio da imagem');
+                });
         }
 
-        var quill = new Quill('#editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ header: [2, 3, false] }],
-                    ['bold', 'italic', 'underline'],
-                    [{ list: 'ordered' }, { list: 'bullet' }],
-                    ['blockquote', 'code-block'],
-                    ['link', 'image'],
-                    ['clean']
-                ],
-                imageResize: hasImageResize ? {} : undefined
-            }
-        });
-        quill.getModule('toolbar').addHandler('image', function () {
-            var input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/jpeg,image/png,image/webp';
-            input.onchange = function () {
-                if (!input.files || !input.files[0]) {
-                    return;
-                }
-                var formData = new FormData();
-                formData.append('image', input.files[0]);
-                fetch('/admin/posts/upload-image', { method: 'POST', body: formData })
-                    .then(function (response) {
-                        return response.json().then(function (payload) {
-                            if (!response.ok || !payload.url) {
-                                throw new Error(payload.error || 'Falha no envio da imagem');
-                            }
-                            var range = quill.getSelection(true);
-                            quill.insertEmbed(range.index, 'image', payload.url);
-                            quill.setSelection(range.index + 1);
-                        });
-                    })
-                    .catch(function (error) {
-                        alert(error.message || 'Falha no envio da imagem');
-                    });
-            };
-            input.click();
-        });
-        document.getElementById('open-media-library').addEventListener('click', function () {
-            MediaLibrary.open(function (item) {
-                var range = quill.getSelection(true);
-
-                if (item.kind === 'image') {
-                    quill.clipboard.dangerouslyPasteHTML(
-                        range.index,
-                        '<img src="' + item.url + '" alt="' + (item.alt_text || '') + '">'
-                    );
-                } else {
-                    quill.clipboard.dangerouslyPasteHTML(
-                        range.index,
-                        '<a href="' + item.url + '">' + item.original_name + '</a>'
-                    );
-                }
-
-                quill.setSelection(range.index + 1);
-            });
-        });
-        document.getElementById('insert-gallery').addEventListener('click', function () {
-            GalleryPicker.open(function (slug) {
-                var range = quill.getSelection(true);
-                quill.insertText(range.index, '[@' + slug + '@]');
-                quill.setSelection(range.index + slug.length + 4);
-            });
-        });
         var htmlView = false;
-        var editorEl = document.getElementById('editor');
         var editorHtmlTextarea = document.getElementById('editor-html');
         var toggleHtmlButton = document.getElementById('toggle-html-view');
         var openMediaLibraryButton = document.getElementById('open-media-library');
-        var quillToolbarEl = document.querySelector('.ql-toolbar');
+        var tinyEditor = null;
 
-        toggleHtmlButton.addEventListener('click', function () {
-            if (htmlView) {
-                quill.clipboard.dangerouslyPasteHTML(editorHtmlTextarea.value);
-                editorHtmlTextarea.classList.add('d-none');
-                editorEl.classList.remove('d-none');
-                quillToolbarEl.classList.remove('d-none');
-                openMediaLibraryButton.disabled = false;
-                toggleHtmlButton.innerHTML = '<i class="fa-solid fa-code me-1"></i> Ver HTML';
-            } else {
-                editorHtmlTextarea.value = quill.root.innerHTML;
-                editorEl.classList.add('d-none');
-                quillToolbarEl.classList.add('d-none');
-                editorHtmlTextarea.classList.remove('d-none');
-                openMediaLibraryButton.disabled = true;
-                toggleHtmlButton.innerHTML = '<i class="fa-solid fa-eye me-1"></i> Ver visual';
+        tinymce.init({
+            selector: '#editor',
+            license_key: 'gpl',
+            language: 'pt-BR',
+            height: 420,
+            menubar: false,
+            statusbar: false,
+            plugins: 'lists link table',
+            toolbar: 'blocks | bold italic underline | bullist numlist | link uploadimage | table | removeformat',
+            block_formats: 'Parágrafo=p; Título 2=h2; Título 3=h3; Citação=blockquote; Código=pre',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; } table { width: 100%; border-collapse: collapse; margin: 1rem 0; } th, td { border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; text-align: left; } th { background: rgba(0,0,0,0.04); font-weight: 600; } pre { background: #f1f5f9; border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; overflow-x: auto; } code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }',
+            setup: function (editor) {
+                editor.ui.registry.addButton('uploadimage', {
+                    icon: 'image',
+                    tooltip: 'Inserir imagem',
+                    onAction: function () {
+                        var input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/jpeg,image/png,image/webp';
+                        input.onchange = function () {
+                            if (!input.files || !input.files[0]) {
+                                return;
+                            }
+                            uploadContentImage(input.files[0], function (url) {
+                                editor.focus();
+                                editor.insertContent('<img src="' + url + '">');
+                            });
+                        };
+                        input.click();
+                    }
+                });
             }
+        }).then(function (editors) {
+            tinyEditor = editors[0];
 
-            htmlView = !htmlView;
+            // O formulario comeca com o botao "Salvar" desabilitado porque
+            // tinymce.init() e assincrono (diferente do Quill, que
+            // inicializava na hora) — sem isso, salvar rapido demais (ou um
+            // duplo-clique logo apos a pagina carregar) tentaria ler
+            // tinyEditor.getContent() antes dele existir.
+            var submitButton = document.getElementById('post-form-submit');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Salvar';
+
+            document.getElementById('open-media-library').addEventListener('click', function () {
+                MediaLibrary.open(function (item) {
+                    // O modal do Bootstrap rouba o foco da pagina — sem
+                    // focus() explicito, insertContent() pode inserir no
+                    // ultimo lugar que o navegador lembra (nem sempre o
+                    // cursor onde o usuario estava antes de abrir o modal).
+                    tinyEditor.focus();
+
+                    if (item.kind === 'image') {
+                        tinyEditor.insertContent('<img src="' + item.url + '" alt="' + (item.alt_text || '') + '">');
+                    } else {
+                        tinyEditor.insertContent('<a href="' + item.url + '">' + item.original_name + '</a>');
+                    }
+                });
+            });
+
+            document.getElementById('insert-gallery').addEventListener('click', function () {
+                GalleryPicker.open(function (slug) {
+                    tinyEditor.focus();
+                    tinyEditor.insertContent('[@' + slug + '@]');
+                });
+            });
+
+            toggleHtmlButton.addEventListener('click', function () {
+                var editorContainer = tinyEditor.getContainer();
+
+                if (htmlView) {
+                    tinyEditor.setContent(editorHtmlTextarea.value);
+                    editorHtmlTextarea.classList.add('d-none');
+                    editorContainer.style.display = '';
+                    openMediaLibraryButton.disabled = false;
+                    toggleHtmlButton.innerHTML = '<i class="fa-solid fa-code me-1"></i> Ver HTML';
+                } else {
+                    editorHtmlTextarea.value = tinyEditor.getContent();
+                    editorContainer.style.display = 'none';
+                    editorHtmlTextarea.classList.remove('d-none');
+                    openMediaLibraryButton.disabled = true;
+                    toggleHtmlButton.innerHTML = '<i class="fa-solid fa-eye me-1"></i> Ver visual';
+                }
+
+                htmlView = !htmlView;
+            });
         });
+
         var cropper = null;
         var cropSource = document.getElementById('crop_source');
         var preview = document.getElementById('featured_preview');
@@ -388,7 +396,7 @@
         });
 
         document.getElementById('post-form').addEventListener('submit', function () {
-            document.getElementById('content').value = htmlView ? editorHtmlTextarea.value : quill.root.innerHTML;
+            document.getElementById('content').value = htmlView ? editorHtmlTextarea.value : tinyEditor.getContent();
 
             if (cropper && featuredImageSourceChanged) {
                 var canvas = cropper.getCroppedCanvas({
