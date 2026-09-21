@@ -220,7 +220,9 @@ $router->post('/api/mcp/categories', [McpController::class, 'createCategory']);
 $router->get('/api/mcp/posts', [McpController::class, 'posts']);
 $router->get('/api/mcp/posts/{id}', [McpController::class, 'post']);
 $router->post('/api/mcp/posts', [McpController::class, 'createPost']);
+$router->post('/api/mcp/posts/{id}', [McpController::class, 'updatePost']);
 $router->post('/api/mcp/projects', [McpController::class, 'createProject']);
+$router->post('/api/mcp/projects/{id}', [McpController::class, 'updateProject']);
 $router->post('/api/mcp/media/from-url', [McpController::class, 'attachImageFromUrl']);
 
 // Catch-all de páginas (estilo WordPress Pages). Precisa ser a última rota

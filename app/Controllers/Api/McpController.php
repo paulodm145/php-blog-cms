@@ -112,6 +112,56 @@ class McpController
         $this->jsonResponse($created, 201);
     }
 
+    public function updatePost(string $id): void
+    {
+        $postId = (int) $id;
+        $existing = $this->posts->findByIdForAdmin($postId);
+
+        if ($existing === null) {
+            $this->jsonResponse(['error' => 'post nao encontrado'], 404);
+            return;
+        }
+
+        $body = $this->jsonBody();
+        $title = isset($body['title']) ? trim((string) $body['title']) : $existing['title'];
+
+        if ($title === '') {
+            $this->jsonResponse(['error' => 'campo "title" e obrigatorio'], 400);
+            return;
+        }
+
+        $categoryIds = $existing['category_ids'];
+
+        if (isset($body['category_ids'])) {
+            $categoryIds = [];
+
+            foreach ((array) $body['category_ids'] as $categoryId) {
+                $categoryIds[] = (int) $categoryId;
+            }
+        }
+
+        $tags = isset($body['tags']) ? (string) $body['tags'] : implode(',', array_column($existing['tags'], 'name'));
+
+        $this->posts->updateForAdmin($postId, [
+            'title' => $title,
+            // Nunca muda o slug numa edicao via MCP — evita quebrar um
+            // link ja publicado/compartilhado so porque o titulo mudou.
+            'slug' => $existing['slug'],
+            'excerpt' => isset($body['excerpt']) ? (string) $body['excerpt'] : $existing['excerpt'],
+            'content' => isset($body['content']) ? Html::postContent((string) $body['content']) : $existing['content'],
+            'author_id' => $existing['author_id'],
+            'featured_image' => isset($body['featured_image']) ? (string) $body['featured_image'] : $existing['featured_image'],
+            'published_at' => $existing['published_at'],
+            'category_ids' => $categoryIds,
+            'tags' => $tags,
+            // Preserva o status atual sempre — editar nunca publica nem
+            // despublica, mesmo que o body mande um status diferente.
+            'status' => $existing['status'],
+        ]);
+
+        $this->jsonResponse($this->posts->findByIdForAdmin($postId));
+    }
+
     public function createProject(): void
     {
         $body = $this->jsonBody();
@@ -140,6 +190,45 @@ class McpController
         ]);
 
         $this->jsonResponse(['id' => $id], 201);
+    }
+
+    public function updateProject(string $id): void
+    {
+        $projectId = (int) $id;
+        $existing = $this->projects->findByIdForAdmin($projectId);
+
+        if ($existing === null) {
+            $this->jsonResponse(['error' => 'projeto nao encontrado'], 404);
+            return;
+        }
+
+        $body = $this->jsonBody();
+        $name = isset($body['name']) ? trim((string) $body['name']) : $existing['name'];
+
+        if ($name === '') {
+            $this->jsonResponse(['error' => 'campo "name" e obrigatorio'], 400);
+            return;
+        }
+
+        $this->projects->update($projectId, [
+            'name' => $name,
+            // Mesma regra do updatePost(): nunca muda o slug numa edicao.
+            'slug' => $existing['slug'],
+            'tagline' => isset($body['tagline']) ? (string) $body['tagline'] : $existing['tagline'],
+            'content' => isset($body['content']) ? Html::postContent((string) $body['content']) : $existing['content'],
+            'technologies' => isset($body['technologies']) ? (string) $body['technologies'] : $existing['technologies'],
+            'cover_media_id' => isset($body['cover_media_id']) ? (int) $body['cover_media_id'] : $existing['cover_media_id'],
+            'role' => isset($body['role']) ? (string) $body['role'] : $existing['role'],
+            'project_type' => isset($body['project_type']) ? (string) $body['project_type'] : $existing['project_type'],
+            'live_url' => isset($body['live_url']) ? (string) $body['live_url'] : $existing['live_url'],
+            'start_date' => isset($body['start_date']) ? (string) $body['start_date'] : $existing['start_date'],
+            'end_date' => isset($body['end_date']) ? (string) $body['end_date'] : $existing['end_date'],
+            'featured' => (bool) $existing['featured'],
+            // Preserva o status atual sempre, mesma regra do updatePost().
+            'status' => $existing['status'],
+        ]);
+
+        $this->jsonResponse($this->projects->findByIdForAdmin($projectId));
     }
 
     public function attachImageFromUrl(): void
