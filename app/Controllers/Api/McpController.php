@@ -4,8 +4,11 @@ namespace App\Controllers\Api;
 
 use App\Core\Auth;
 use App\Core\Html;
+use App\Core\ImageThumbnail;
+use App\Core\RemoteImageFetcher;
 use App\Core\Text;
 use App\Repositories\CategoryRepository;
+use App\Repositories\MediaRepository;
 use App\Repositories\PostRepository;
 use App\Repositories\ProjectRepository;
 
@@ -14,6 +17,7 @@ class McpController
     private $categories;
     private $posts;
     private $projects;
+    private $media;
 
     public function __construct()
     {
@@ -21,6 +25,7 @@ class McpController
         $this->categories = new CategoryRepository();
         $this->posts = new PostRepository();
         $this->projects = new ProjectRepository();
+        $this->media = new MediaRepository();
     }
 
     public function categories(): void
@@ -137,6 +142,70 @@ class McpController
         ]);
 
         $this->jsonResponse(['id' => $id], 201);
+    }
+
+    public function attachImageFromUrl(): void
+    {
+        $body = $this->jsonBody();
+        $url = trim((string) ($body['url'] ?? ''));
+        $altText = trim((string) ($body['alt_text'] ?? ''));
+
+        if ($url === '' || !RemoteImageFetcher::isSafeUrl($url)) {
+            $this->jsonResponse(['error' => 'url invalida ou nao permitida'], 400);
+            return;
+        }
+
+        $downloaded = RemoteImageFetcher::download($url, 5242880);
+
+        if ($downloaded === null) {
+            $this->jsonResponse(['error' => 'nao foi possivel baixar a imagem'], 400);
+            return;
+        }
+
+        $extension = str_replace('image/', '', $downloaded['mime']);
+        $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+        $year = date('Y');
+        $month = date('m');
+        $fileName = 'mcp-' . bin2hex(random_bytes(4)) . '.' . $extension;
+        $uploadDir = dirname(__DIR__, 3) . '/public/uploads/media/' . $year . '/' . $month;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $finalPath = $uploadDir . '/' . $fileName;
+        rename($downloaded['path'], $finalPath);
+        // tempnam() cria o arquivo com permissao 600 (so o dono le) — os
+        // demais uploads da biblioteca de midia ficam 644/664. Sem isso,
+        // a imagem baixada por essa rota podia nao ser servida em
+        // producao, dependendo de como o processo web e o PHP-FPM estao
+        // mapeados (na hospedagem compartilhada, nem sempre e o mesmo
+        // usuario que criou o arquivo).
+        chmod($finalPath, 0644);
+
+        $dimensions = @getimagesize($finalPath);
+        $width = $dimensions !== false ? $dimensions[0] : null;
+        $height = $dimensions !== false ? $dimensions[1] : null;
+
+        $thumbnailAbsolutePath = ImageThumbnail::generate($finalPath, $downloaded['mime']);
+        $thumbnailPath = $thumbnailAbsolutePath !== null
+            ? '/uploads/media/' . $year . '/' . $month . '/' . basename($thumbnailAbsolutePath)
+            : null;
+
+        $mediaId = $this->media->create([
+            'file_name' => $fileName,
+            'original_name' => $fileName,
+            'path' => '/uploads/media/' . $year . '/' . $month . '/' . $fileName,
+            'thumbnail_path' => $thumbnailPath,
+            'mime_type' => $downloaded['mime'],
+            'kind' => 'image',
+            'size' => $downloaded['size'],
+            'width' => $width,
+            'height' => $height,
+            'alt_text' => $altText,
+        ]);
+
+        $this->jsonResponse($this->media->findByIdForAdmin($mediaId), 201);
     }
 
     /**

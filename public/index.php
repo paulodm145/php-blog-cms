@@ -221,6 +221,7 @@ $router->get('/api/mcp/posts', [McpController::class, 'posts']);
 $router->get('/api/mcp/posts/{id}', [McpController::class, 'post']);
 $router->post('/api/mcp/posts', [McpController::class, 'createPost']);
 $router->post('/api/mcp/projects', [McpController::class, 'createProject']);
+$router->post('/api/mcp/media/from-url', [McpController::class, 'attachImageFromUrl']);
 
 // Catch-all de páginas (estilo WordPress Pages). Precisa ser a última rota
 // GET registrada: só entra em jogo quando nenhuma rota fixa acima bateu.
