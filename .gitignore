@@ -18,9 +18,16 @@
 /docs/superpowers/
 
 # Artefatos locais de ferramentas de IA/agentes — estado de sessao, nao
-# conteudo do projeto. Excecao: .claude/skills/ e versionado de proposito,
-# pra qualquer sessao do Claude Code que abrir este repo (em qualquer
-# maquina) ja ter os fluxos do projeto disponiveis sem redescobri-los.
+# conteudo do projeto. Excecao: .claude/skills/publicar-conteudo/ e
+# versionado de proposito, pra qualquer sessao do Claude Code que abrir
+# este repo (em qualquer maquina) ja ter os fluxos do projeto disponiveis
+# sem redescobri-los. Skills de terceiros instaladas via `npx skills`
+# (ex: writing-plans, do pacote obra/superpowers) sao tooling pessoal
+# generica, nao especifica deste projeto, entao ficam de fora.
 /.claude/*
 !/.claude/skills/
+/.claude/skills/*
+!/.claude/skills/publicar-conteudo/
+/.agents/
+/skills-lock.json
 .codex
