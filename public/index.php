@@ -22,6 +22,7 @@ use App\Controllers\AdminUserController;
 use App\Controllers\BlogController;
 use App\Controllers\CommentController;
 use App\Controllers\ErrorController;
+use App\Controllers\Api\McpController;
 use App\Controllers\HomeController;
 use App\Controllers\PageController;
 use App\Controllers\ProjectController;
@@ -209,6 +210,12 @@ $router->get('/admin/settings', [AdminSettingController::class, 'edit']);
 $router->post('/admin/settings', [AdminSettingController::class, 'update']);
 $router->get('/admin/atualizar', [AdminUpdateController::class, 'show']);
 $router->post('/admin/atualizar/run', [AdminUpdateController::class, 'run']);
+
+// API MCP (servidor-a-servidor, autenticacao propria via X-Blog-Api-Key,
+// sem relacao com a sessao de admin). Precisa ficar antes do catch-all de
+// paginas abaixo, senao "/api/mcp/categories" seria capturado como slug
+// de pagina.
+$router->get('/api/mcp/categories', [McpController::class, 'categories']);
 
 // Catch-all de páginas (estilo WordPress Pages). Precisa ser a última rota
 // GET registrada: só entra em jogo quando nenhuma rota fixa acima bateu.
