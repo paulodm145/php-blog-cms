@@ -19,6 +19,12 @@ require dirname(__DIR__) . '/partials/site-top.php';
                             <a href="/admin/posts/<?= (int) $post['id'] ?>/edit" class="chip-pill no-print"><i class="fa-solid fa-pen"></i> Editar post</a>
                         <?php endif; ?>
                     </div>
+                    <?php if (!empty($isDraftPreview)): ?>
+                        <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0 no-print" role="alert">
+                            <i class="fa-solid fa-eye-slash"></i>
+                            <span>Rascunho — só você vê essa página, ela não está publicada nem indexada. Publique pelo admin quando estiver pronto.</span>
+                        </div>
+                    <?php endif; ?>
                     <div class="d-flex gap-2 flex-wrap mt-3 mb-3">
                         <?php foreach ($post['categories'] ?? [] as $postCategory): ?>
                             <a href="/blog/categoria/<?= rawurlencode($postCategory['slug']) ?>" class="chip-pill"><?= htmlspecialchars($postCategory['name'], ENT_QUOTES, 'UTF-8') ?></a>

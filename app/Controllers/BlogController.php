@@ -126,6 +126,18 @@ class BlogController
     public function show(string $slug): void
     {
         $post = $this->posts->findBySlug($slug);
+        $isDraftPreview = false;
+
+        // Rascunho nao aparece pra visitante comum (findBySlug so acha
+        // publicado). Se ninguem achou e quem esta olhando e o admin
+        // logado, tenta de novo sem o filtro de status — e como o botao
+        // "Ver post" do admin consegue mostrar um rascunho sem publicar
+        // ele de verdade (skill publicar-conteudo sempre cria como
+        // draft; precisa de algum jeito de revisar antes de publicar).
+        if ($post === null && Auth::check()) {
+            $post = $this->posts->findBySlugForAdmin($slug);
+            $isDraftPreview = $post !== null && $post['status'] !== 'published';
+        }
 
         if ($post === null) {
             ErrorPage::notFound();
@@ -147,7 +159,12 @@ class BlogController
             'description' => $post['excerpt'] ?: $post['title'],
             'settings' => $this->settings,
             'active' => 'blog',
-            'canonical' => $postUrl,
+            // Rascunho nunca leva canonical nem indexacao — mesmo que
+            // alguem com sessao aberta chegue nele, nao deixa rastro pra
+            // buscador nenhum.
+            'canonical' => $isDraftPreview ? null : $postUrl,
+            'robots' => $isDraftPreview ? 'noindex,nofollow' : null,
+            'isDraftPreview' => $isDraftPreview,
             'image' => $post['featured_image'],
             'ogType' => 'article',
             'post' => $post,

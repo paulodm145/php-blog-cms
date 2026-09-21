@@ -202,14 +202,33 @@ class PostRepository
 
     public function findBySlug(string $slug): ?array
     {
+        return $this->findBySlugInternal($slug, true);
+    }
+
+    /**
+     * Mesma busca de findBySlug(), mas sem exigir status='published' —
+     * usada so pela pre-visualizacao de rascunho (BlogController::show(),
+     * so quando Auth::check() e verdadeiro). Nunca chamar isso numa rota
+     * publica sem essa checagem antes, senao rascunho vira visivel pra
+     * qualquer visitante que adivinhar o slug.
+     */
+    public function findBySlugForAdmin(string $slug): ?array
+    {
+        return $this->findBySlugInternal($slug, false);
+    }
+
+    private function findBySlugInternal(string $slug, bool $onlyPublished): ?array
+    {
+        $statusFilter = $onlyPublished ? ' AND posts.published_at IS NOT NULL AND posts.status = "published"' : '';
+
         $post = $this->database->fetch(
             'SELECT posts.id, posts.title, posts.slug, posts.excerpt, posts.content,
                     COALESCE(users.name, posts.author_name) AS author_name,
-                    posts.featured_image, posts.published_at,
+                    posts.featured_image, posts.published_at, posts.status,
                     ' . $this->categoryNamesSql() . ' AS category_name
              FROM posts
              LEFT JOIN users ON users.id = posts.author_id
-             WHERE posts.slug = :slug AND posts.published_at IS NOT NULL AND posts.status = "published" AND posts.deleted_at IS NULL
+             WHERE posts.slug = :slug' . $statusFilter . ' AND posts.deleted_at IS NULL
              LIMIT 1',
             ['slug' => $slug]
         );

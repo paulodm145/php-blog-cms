@@ -292,6 +292,21 @@ separados no repositório — se o usuário pedir isso, leia
 confirmar a assinatura atual (o método `create()` cobre só os campos
 diretos da tabela `projects`).
 
+## Revisar o rascunho no site
+
+Como todo post entra como `draft` (regra 7), a forma de conferir como ele
+vai ficar publicado é abrir a própria URL pública logado como admin:
+`https://paulorb.dev/blog/<slug>` renderiza normalmente pra quem tem
+sessão de admin aberta, com um aviso amarelo de "Rascunho" no topo e sem
+indexação (`noindex,nofollow`, sem `canonical`) — pra qualquer visitante
+sem sessão, a mesma URL continua dando 404, igual sempre foi. Não é
+preciso nenhuma URL especial nem parâmetro extra; é o mesmo link que o
+botão "Ver post" da tela de edição já usa.
+
+Depois de revisado, a publicação em si é manual, pelo admin
+(`/admin/posts/<id>/edit` → status "Publicada", ou o atalho
+`/admin/posts/<id>/status/published`) — essa skill não publica sozinha.
+
 ## Depois de publicar
 
 - Se o post/projeto usa uma galeria de fotos, o shortcode no `content`
