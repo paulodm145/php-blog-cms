@@ -302,6 +302,52 @@ class PostRepository
         );
     }
 
+    /**
+     * Mesma listagem de allForAdmin(), mas com filtro de status/busca e
+     * paginacao — usada pela API /api/mcp/posts (o Worker MCP nao carrega
+     * a tabela inteira igual a tela /admin/posts faz, entao precisa de
+     * paginacao de verdade, no banco).
+     */
+    public function listForAdmin(?string $status, string $search, int $page, int $perPage): array
+    {
+        $page = max(1, $page);
+        $offset = ($page - 1) * $perPage;
+        $pdo = $this->database->connection();
+        $where = 'WHERE posts.deleted_at IS NULL';
+        $params = [];
+
+        if ($status !== null && $status !== '') {
+            $where .= ' AND posts.status = :status';
+            $params[':status'] = $status;
+        }
+
+        if (trim($search) !== '') {
+            $where .= ' AND posts.title LIKE :search';
+            $params[':search'] = '%' . trim($search) . '%';
+        }
+
+        $statement = $pdo->prepare(
+            'SELECT posts.id, posts.title, posts.slug, posts.status,
+                    COALESCE(users.name, posts.author_name) AS author_name,
+                    posts.published_at
+             FROM posts
+             LEFT JOIN users ON users.id = posts.author_id
+             ' . $where . '
+             ORDER BY posts.id DESC
+             LIMIT :limit OFFSET :offset'
+        );
+
+        foreach ($params as $key => $value) {
+            $statement->bindValue($key, $value);
+        }
+
+        $statement->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $statement->execute();
+
+        return $statement->fetchAll();
+    }
+
     public function findByIdForAdmin(int $id): ?array
     {
         $post = $this->database->fetch(
