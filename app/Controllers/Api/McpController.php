@@ -7,17 +7,20 @@ use App\Core\Html;
 use App\Core\Text;
 use App\Repositories\CategoryRepository;
 use App\Repositories\PostRepository;
+use App\Repositories\ProjectRepository;
 
 class McpController
 {
     private $categories;
     private $posts;
+    private $projects;
 
     public function __construct()
     {
         Auth::requireMcpApiKey();
         $this->categories = new CategoryRepository();
         $this->posts = new PostRepository();
+        $this->projects = new ProjectRepository();
     }
 
     public function categories(): void
@@ -104,6 +107,36 @@ class McpController
         $created = $this->posts->findByIdForAdmin($id);
 
         $this->jsonResponse($created, 201);
+    }
+
+    public function createProject(): void
+    {
+        $body = $this->jsonBody();
+        $name = trim((string) ($body['name'] ?? ''));
+
+        if ($name === '') {
+            $this->jsonResponse(['error' => 'campo "name" e obrigatorio'], 400);
+            return;
+        }
+
+        $id = $this->projects->create([
+            'name' => $name,
+            'slug' => '',
+            'tagline' => (string) ($body['tagline'] ?? ''),
+            'content' => Html::postContent((string) ($body['content'] ?? '')),
+            'technologies' => (string) ($body['technologies'] ?? ''),
+            'cover_media_id' => isset($body['cover_media_id']) ? (int) $body['cover_media_id'] : null,
+            'role' => isset($body['role']) ? (string) $body['role'] : null,
+            'project_type' => isset($body['project_type']) ? (string) $body['project_type'] : null,
+            'live_url' => isset($body['live_url']) ? (string) $body['live_url'] : null,
+            'start_date' => isset($body['start_date']) ? (string) $body['start_date'] : null,
+            'end_date' => isset($body['end_date']) ? (string) $body['end_date'] : null,
+            'featured' => false,
+            // Forcado, mesma regra do createPost().
+            'status' => 'draft',
+        ]);
+
+        $this->jsonResponse(['id' => $id], 201);
     }
 
     /**
