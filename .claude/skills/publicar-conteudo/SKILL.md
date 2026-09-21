@@ -49,6 +49,16 @@ migração de schema.
    imagem só porque apareceu bem posicionada numa busca; ver critérios
    na seção "Buscando e anexando uma imagem" abaixo antes de baixar
    qualquer coisa.
+7. **Post sempre entra como `status => 'draft'`**, nunca `'published'`
+   direto por essa skill — mesmo que o usuário peça pra "publicar". A
+   ideia é sempre existir uma revisão humana antes do conteúdo ficar
+   público: o usuário confere o rascunho renderizado (ver seção
+   "Revisar o rascunho no site" abaixo) e publica manualmente pelo
+   admin (`/admin/posts/{id}/edit` → status "Publicada", ou o atalho
+   `/admin/posts/{id}/status/published`) quando estiver satisfeito.
+   Essa regra é só pra **posts** — projeto continua usando o `status`
+   que o usuário pedir, já que `ProjectRepository::create()` é usado
+   com menos frequência e o pedido do usuário costuma já vir decidido.
 
 ## Escolhendo ou criando categorias
 
@@ -130,9 +140,69 @@ Passo a passo:
    <p><em>Foto: Nome do Autor, via Unsplash.</em></p>
    ```
 
+## Estilo de redação dos posts
+
+Regras de conteúdo pra todo post escrito por essa skill, além da estrutura
+técnica do HTML:
+
+- **Redação estilo jornalismo tech sênior.** Escrever como um repórter de
+  tecnologia experiente escreveria: direto, factual, parágrafos curtos,
+  informação relevante logo no início de cada seção (pirâmide invertida,
+  não deixar o ponto principal só pro final). Nada de tom de vendedor,
+  nada de encher linguiça pra parecer mais completo.
+- **Evitar "slop de IA"**: sem abrir com frases genéricas tipo "No mundo
+  atual, a tecnologia..."; sem "É importante notar que"/"Vale ressaltar
+  que" repetidos; sem excesso de adjetivos vazios ("revolucionário",
+  "poderoso", "incrível"); sem parágrafos que só reafirmam o título de
+  forma diferente; sem listas genéricas de 3 itens óbvios só pra parecer
+  estruturado. Cada frase tem que carregar informação nova.
+- **Nunca usar travessão (—)** no corpo do texto — nem pra aposto, nem pra
+  diálogo, nem pra ênfase. Reescrever a frase com vírgula, ponto ou
+  parênteses em vez disso.
+- **Texto claro e fácil de ler**: frases curtas a médias, uma ideia por
+  frase, evitar subordinadas encadeadas. Termos técnicos explicados na
+  primeira aparição, sem soar didático demais pro leitor que já entende
+  do assunto.
+- **Lista de âncoras no início**, estilo freeCodeCamp: logo depois do
+  primeiro parágrafo de abertura (nunca antes dele — o leitor precisa de
+  contexto antes do índice), uma lista `<ul>` com um link por seção
+  principal do post, apontando pro `id` do respectivo `<h2>`/`<h3>`
+  correspondente:
+  ```html
+  <p>Parágrafo de abertura contextualizando o assunto.</p>
+  <ul>
+    <li><a href="#o-que-e-docker">O que é Docker</a></li>
+    <li><a href="#por-que-usar">Por que usar em produção</a></li>
+    <li><a href="#referencias">Referências</a></li>
+  </ul>
+  <h2 id="o-que-e-docker">O que é Docker</h2>
+  <p>...</p>
+  <h2 id="por-que-usar">Por que usar em produção</h2>
+  <p>...</p>
+  ```
+  O `id` de cada heading é o slug do próprio título da seção (mesmo
+  padrão de `Text::slugify()`: minúsculo, sem acento, hífen no lugar de
+  espaço). A seção de referências (abaixo) também entra na lista de
+  âncoras.
+- **Referências em ABNT no final do post**, sempre, mesmo que só uma
+  fonte tenha sido consultada. Seção `<h2 id="referencias">Referências</h2>`
+  seguida de uma lista com uma entrada por fonte, formato:
+  ```html
+  <h2 id="referencias">Referências</h2>
+  <ul>
+    <li>SOBRENOME, Nome. Título da página ou artigo. Nome do site, ano.
+    Disponível em: https://exemplo.com/pagina. Acesso em: 21 set. 2026.</li>
+  </ul>
+  ```
+  Quando não houver autor identificável (comum em documentação oficial),
+  usar o nome da organização no lugar de SOBRENOME/Nome (ex: `DOCKER
+  INC. Documentação oficial. Docker Docs, 2026. Disponível em: ...`).
+
 ## Passo a passo — publicar um POST
 
-1. **Monte o HTML do conteúdo** já dentro da whitelist acima. Blocos de
+1. **Monte o HTML do conteúdo** já dentro da whitelist acima, seguindo o
+   estilo de redação da seção anterior (abertura → lista de âncoras →
+   seções com `id` → referências ABNT no final). Blocos de
    código usam `<pre><code>...</code></pre>` (o realce de sintaxe e a
    "janela" com bolinhas são aplicados automaticamente na exibição por
    `Html::renderPostContent()` — não precisa marcar nada a mais).
@@ -168,7 +238,7 @@ Passo a passo:
        'published_at'   => date('Y-m-d H:i:s'),
        'category_ids'   => [], // IDs de categorias existentes e/ou recém-criadas (ver seção de categorias)
        'tags'           => '', // string separada por vírgula, cria tags novas se não existirem
-       'status'         => 'published', // ou 'draft' / 'hidden'
+       'status'         => 'draft', // sempre 'draft' nesta skill — ver regra 7
    ]);
 
    echo "OK id={$id}\n";
