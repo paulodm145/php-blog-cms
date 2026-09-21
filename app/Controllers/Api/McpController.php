@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Core\Auth;
+use App\Core\Text;
 use App\Repositories\CategoryRepository;
 
 class McpController
@@ -18,6 +19,30 @@ class McpController
     public function categories(): void
     {
         $this->jsonResponse($this->categories->all());
+    }
+
+    public function createCategory(): void
+    {
+        $body = $this->jsonBody();
+        $name = trim((string) ($body['name'] ?? ''));
+
+        if ($name === '') {
+            $this->jsonResponse(['error' => 'campo "name" e obrigatorio'], 400);
+            return;
+        }
+
+        $slug = Text::slugify($name);
+        $existing = $slug !== '' ? $this->categories->findBySlug($slug) : null;
+
+        if ($existing !== null) {
+            $this->jsonResponse($existing, 200);
+            return;
+        }
+
+        $id = $this->categories->create(['name' => $name, 'slug' => '']);
+        $created = $this->categories->find($id);
+
+        $this->jsonResponse($created, 201);
     }
 
     /**
