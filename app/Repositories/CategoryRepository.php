@@ -47,15 +47,18 @@ class CategoryRepository
         return $this->database->fetch('SELECT id, name, slug FROM categories WHERE id = :id LIMIT 1', ['id' => $id]);
     }
 
-    public function create(array $data): void
+    public function create(array $data): int
     {
         $name = trim($data['name']);
         $slug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify($name);
+        $pdo = $this->database->connection();
 
         $this->database->execute(
             'INSERT INTO categories (name, slug) VALUES (:name, :slug)',
             ['name' => $name, 'slug' => $slug]
         );
+
+        return (int) $pdo->lastInsertId();
     }
 
     public function update(int $id, array $data): void
