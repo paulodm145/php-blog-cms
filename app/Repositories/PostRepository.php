@@ -381,7 +381,8 @@ class PostRepository
             $categoryIds = $this->normalizeCategoryIds($data['category_ids'] ?? []);
             $primaryCategoryId = $categoryIds[0] ?? null;
             $author = $this->findAuthor((int) ($data['author_id'] ?? 0));
-            $slug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify((string) $data['title']);
+            $baseSlug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify((string) $data['title']);
+            $slug = $this->uniqueSlug($baseSlug, $id);
             $this->database->execute(
                 'UPDATE posts
                  SET title = :title,
@@ -427,7 +428,8 @@ class PostRepository
             $categoryIds = $this->normalizeCategoryIds($data['category_ids'] ?? []);
             $primaryCategoryId = $categoryIds[0] ?? null;
             $author = $this->findAuthor((int) ($data['author_id'] ?? 0));
-            $slug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify((string) $data['title']);
+            $baseSlug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify((string) $data['title']);
+            $slug = $this->uniqueSlug($baseSlug, null);
             $this->database->execute(
                 'INSERT INTO posts (
                     title, slug, excerpt, content, author_id, author_name, featured_image,
@@ -634,5 +636,37 @@ class PostRepository
         $allowed = ['published', 'draft', 'hidden'];
 
         return in_array($status, $allowed, true) ? $status : 'draft';
+    }
+
+    /**
+     * posts.slug tem UNIQUE no banco, mas nada aqui checava colisao antes
+     * de inserir — dois posts com o mesmo titulo (ou slug explicito igual)
+     * geravam PDOException nao tratada. Mesmo padrao ja usado em
+     * ProjectRepository::uniqueSlug()/slugExists().
+     */
+    private function uniqueSlug(string $baseSlug, ?int $excludeId): string
+    {
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while ($this->slugExists($slug, $excludeId)) {
+            $slug = $baseSlug . '-' . $suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    private function slugExists(string $slug, ?int $excludeId): bool
+    {
+        $sql = 'SELECT id FROM posts WHERE slug = :slug';
+        $params = ['slug' => $slug];
+
+        if ($excludeId !== null) {
+            $sql .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        return $this->database->fetch($sql . ' LIMIT 1', $params) !== null;
     }
 }
