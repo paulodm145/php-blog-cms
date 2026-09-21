@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Core\Auth;
+use App\Core\Html;
 use App\Core\Text;
 use App\Repositories\CategoryRepository;
 use App\Repositories\PostRepository;
@@ -67,6 +68,42 @@ class McpController
         }
 
         $this->jsonResponse($post);
+    }
+
+    public function createPost(): void
+    {
+        $body = $this->jsonBody();
+        $title = trim((string) ($body['title'] ?? ''));
+
+        if ($title === '') {
+            $this->jsonResponse(['error' => 'campo "title" e obrigatorio'], 400);
+            return;
+        }
+
+        $categoryIds = [];
+
+        foreach ((array) ($body['category_ids'] ?? []) as $categoryId) {
+            $categoryIds[] = (int) $categoryId;
+        }
+
+        $id = $this->posts->createForAdmin([
+            'title' => $title,
+            'slug' => '',
+            'excerpt' => (string) ($body['excerpt'] ?? ''),
+            'content' => Html::postContent((string) ($body['content'] ?? '')),
+            'author_id' => 1,
+            'featured_image' => (string) ($body['featured_image'] ?? '/assets/images/blog-feature.svg'),
+            'published_at' => date('Y-m-d H:i:s'),
+            'category_ids' => $categoryIds,
+            'tags' => (string) ($body['tags'] ?? ''),
+            // Forcado, independente do que veio no body — regra 7 da
+            // skill publicar-conteudo, agora validada no servidor.
+            'status' => 'draft',
+        ]);
+
+        $created = $this->posts->findByIdForAdmin($id);
+
+        $this->jsonResponse($created, 201);
     }
 
     /**

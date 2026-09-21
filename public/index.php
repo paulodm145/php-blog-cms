@@ -219,6 +219,7 @@ $router->get('/api/mcp/categories', [McpController::class, 'categories']);
 $router->post('/api/mcp/categories', [McpController::class, 'createCategory']);
 $router->get('/api/mcp/posts', [McpController::class, 'posts']);
 $router->get('/api/mcp/posts/{id}', [McpController::class, 'post']);
+$router->post('/api/mcp/posts', [McpController::class, 'createPost']);
 
 // Catch-all de páginas (estilo WordPress Pages). Precisa ser a última rota
 // GET registrada: só entra em jogo quando nenhuma rota fixa acima bateu.
