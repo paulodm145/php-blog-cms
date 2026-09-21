@@ -217,6 +217,8 @@ $router->post('/admin/atualizar/run', [AdminUpdateController::class, 'run']);
 // de pagina.
 $router->get('/api/mcp/categories', [McpController::class, 'categories']);
 $router->post('/api/mcp/categories', [McpController::class, 'createCategory']);
+$router->get('/api/mcp/posts', [McpController::class, 'posts']);
+$router->get('/api/mcp/posts/{id}', [McpController::class, 'post']);
 
 // Catch-all de páginas (estilo WordPress Pages). Precisa ser a última rota
 // GET registrada: só entra em jogo quando nenhuma rota fixa acima bateu.
