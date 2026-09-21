@@ -47,10 +47,28 @@ class CategoryRepository
         return $this->database->fetch('SELECT id, name, slug FROM categories WHERE id = :id LIMIT 1', ['id' => $id]);
     }
 
+    /**
+     * Busca por nome exato (case-insensitive) — usada pela API MCP pra
+     * deduplicar antes de criar. Deliberadamente NAO busca por slug: dois
+     * nomes diferentes que colidem no mesmo slug (ex: "!!!" e "???", que
+     * o fallback de slugify() resolve pros dois como "categoria") sao
+     * categorias distintas, so com slugs vizinhos (uniqueSlug() cuida
+     * disso); buscar por slug ali tratava esses dois nomes diferentes
+     * como se fossem a mesma categoria, o que estava errado.
+     */
+    public function findByName(string $name): ?array
+    {
+        return $this->database->fetch(
+            'SELECT id, name, slug FROM categories WHERE LOWER(name) = LOWER(:name) LIMIT 1',
+            ['name' => trim($name)]
+        );
+    }
+
     public function create(array $data): int
     {
         $name = trim($data['name']);
-        $slug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify($name);
+        $baseSlug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify($name);
+        $slug = $this->uniqueSlug($baseSlug, null);
         $pdo = $this->database->connection();
 
         $this->database->execute(
@@ -64,12 +82,46 @@ class CategoryRepository
     public function update(int $id, array $data): void
     {
         $name = trim($data['name']);
-        $slug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify($name);
+        $baseSlug = trim($data['slug']) !== '' ? trim($data['slug']) : $this->slugify($name);
+        $slug = $this->uniqueSlug($baseSlug, $id);
 
         $this->database->execute(
             'UPDATE categories SET name = :name, slug = :slug WHERE id = :id',
             ['name' => $name, 'slug' => $slug, 'id' => $id]
         );
+    }
+
+    /**
+     * categories.slug e UNIQUE no banco, mas nada verificava colisao
+     * antes de inserir/atualizar — dois nomes diferentes que caem no
+     * mesmo slug (o fallback 'categoria' de slugify(), ou um slug
+     * explicito repetido) geravam PDOException nao tratada. Mesmo padrao
+     * ja usado em ProjectRepository e replicado em PostRepository.
+     */
+    private function uniqueSlug(string $baseSlug, ?int $excludeId): string
+    {
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while ($this->slugExists($slug, $excludeId)) {
+            $slug = $baseSlug . '-' . $suffix;
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
+    private function slugExists(string $slug, ?int $excludeId): bool
+    {
+        $sql = 'SELECT id FROM categories WHERE slug = :slug';
+        $params = ['slug' => $slug];
+
+        if ($excludeId !== null) {
+            $sql .= ' AND id != :exclude_id';
+            $params['exclude_id'] = $excludeId;
+        }
+
+        return $this->database->fetch($sql . ' LIMIT 1', $params) !== null;
     }
 
     public function delete(int $id): void

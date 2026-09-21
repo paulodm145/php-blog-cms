@@ -6,7 +6,6 @@ use App\Core\Auth;
 use App\Core\Html;
 use App\Core\ImageThumbnail;
 use App\Core\RemoteImageFetcher;
-use App\Core\Text;
 use App\Repositories\CategoryRepository;
 use App\Repositories\MediaRepository;
 use App\Repositories\PostRepository;
@@ -43,8 +42,7 @@ class McpController
             return;
         }
 
-        $slug = Text::slugify($name);
-        $existing = $slug !== '' ? $this->categories->findBySlug($slug) : null;
+        $existing = $this->categories->findByName($name);
 
         if ($existing !== null) {
             $this->jsonResponse($existing, 200);
