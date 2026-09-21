@@ -16,16 +16,26 @@ class RemoteImageFetcher
 
     public static function isSafeUrl(string $url): bool
     {
+        return self::resolveSafeIp($url) !== null;
+    }
+
+    /**
+     * Resolve o host uma unica vez e devolve o IP so se ele for publico
+     * (nao privado/loopback/reservado). Devolve null pra qualquer coisa
+     * invalida ou insegura.
+     */
+    private static function resolveSafeIp(string $url): ?string
+    {
         $parts = parse_url($url);
 
         if ($parts === false || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])) {
-            return false;
+            return null;
         }
 
         $ip = gethostbyname($parts['host']);
         $validPublicIp = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
 
-        return $validPublicIp !== false;
+        return $validPublicIp !== false ? $ip : null;
     }
 
     /**
@@ -33,9 +43,25 @@ class RemoteImageFetcher
      */
     public static function download(string $url, int $maxBytes): ?array
     {
-        if (!self::isSafeUrl($url)) {
+        // Resolve e valida o IP UMA VEZ aqui, e fixa esse mesmo IP na
+        // conexao do curl (CURLOPT_RESOLVE) em vez de deixar o curl
+        // re-resolver o hostname sozinho no connect. Sem isso, dava pra
+        // burlar a validacao inteira com DNS rebinding: o hostname
+        // responde um IP publico na hora do isSafeUrl(), e um IP interno
+        // (127.0.0.1, metadado de nuvem etc) alguns milissegundos depois,
+        // na hora do curl_exec de verdade — as duas resolucoes eram
+        // independentes. Fixar o IP aqui fecha essa janela: o curl usa
+        // sempre o endereco que foi validado, nao importa o que o DNS
+        // responder depois.
+        $ip = self::resolveSafeIp($url);
+        $parts = parse_url($url);
+
+        if ($ip === null || empty($parts['host'])) {
             return null;
         }
+
+        $host = $parts['host'];
+        $port = $parts['port'] ?? 443;
 
         $tmpPath = tempnam(sys_get_temp_dir(), 'mcp_img_');
         $tmpFile = fopen($tmpPath, 'wb');
@@ -52,6 +78,10 @@ class RemoteImageFetcher
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 15,
             CURLOPT_FOLLOWLOCATION => false,
+            // Forca a conexao pro IP ja validado, mantendo o Host/SNI
+            // originais (e assim o certificado TLS do host continua
+            // batendo) — e o mecanismo padrao do curl pra isso.
+            CURLOPT_RESOLVE => [$host . ':' . $port . ':' . $ip],
             CURLOPT_WRITEFUNCTION => function ($ch, $chunk) use ($tmpFile, &$bytesWritten, &$exceeded, $maxBytes) {
                 $bytesWritten += strlen($chunk);
 
