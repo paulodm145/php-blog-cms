@@ -45,6 +45,7 @@
                                 <div class="video-card" draggable="true"
                                      data-url="<?= htmlspecialchars($video['url'], ENT_QUOTES, 'UTF-8') ?>"
                                      data-title="<?= htmlspecialchars($video['name'], ENT_QUOTES, 'UTF-8') ?>"
+                                     data-provider="<?= htmlspecialchars($video['provider'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                      data-thumbnail-media-id="<?= (int) ($video['thumbnail_media_id'] ?? 0) ?>"
                                      data-thumbnail-url="<?= htmlspecialchars($video['thumbnail_url'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
                                     <?php if (!empty($video['thumbnail_url'])): ?>
@@ -54,6 +55,9 @@
                                     <?php endif; ?>
                                     <span class="video-card-title"><?= htmlspecialchars($video['name'] ?: '(sem título)', ENT_QUOTES, 'UTF-8') ?></span>
                                     <button type="button" class="video-card-remove" title="Remover">&times;</button>
+                                    <?php if (($video['provider'] ?? '') === 'google_drive' && empty($video['thumbnail_media_id'])): ?>
+                                        <button type="button" class="video-card-set-thumbnail" title="Escolher miniatura"><i class="fa-solid fa-image"></i></button>
+                                    <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -165,6 +169,42 @@
             });
         }
 
+        // Escolher miniatura e sempre uma acao separada, sobre um cartao
+        // que ja existe -- nunca bloqueia nem arrisca perder o video em
+        // si. Fechar o modal sem selecionar nada so nao muda nada (o
+        // callback do MediaLibrary.open() so roda quando o usuario clica
+        // "Inserir" de verdade; sem isso aqui, o video inteiro sumia sem
+        // aviso se o admin abrisse o seletor e desistisse).
+        function bindVideoCardSetThumbnail(button) {
+            button.addEventListener('click', function () {
+                var card = button.closest('.video-card');
+
+                MediaLibrary.open(function (item) {
+                    if (item.kind !== 'image') {
+                        alert('A miniatura precisa ser uma imagem.');
+                        return;
+                    }
+
+                    card.setAttribute('data-thumbnail-media-id', item.id);
+                    card.setAttribute('data-thumbnail-url', item.url);
+
+                    var placeholder = card.querySelector('.video-card-placeholder');
+                    var img = document.createElement('img');
+                    img.src = item.url;
+                    img.alt = '';
+
+                    if (placeholder) {
+                        placeholder.replaceWith(img);
+                    } else {
+                        card.querySelector('img').replaceWith(img);
+                    }
+
+                    button.remove();
+                    updateVideosInput();
+                });
+            });
+        }
+
         function bindVideoCardDrag(card) {
             card.addEventListener('dragstart', function () {
                 draggedVideoCard = card;
@@ -195,12 +235,13 @@
             });
         }
 
-        function addVideoCard(url, title, thumbnailMediaId, thumbnailUrl) {
+        function addVideoCard(url, title, thumbnailMediaId, thumbnailUrl, provider) {
             var card = document.createElement('div');
             card.className = 'video-card';
             card.setAttribute('draggable', 'true');
             card.setAttribute('data-url', url);
             card.setAttribute('data-title', title);
+            card.setAttribute('data-provider', provider || '');
             card.setAttribute('data-thumbnail-media-id', thumbnailMediaId || 0);
             card.setAttribute('data-thumbnail-url', thumbnailUrl || '');
 
@@ -208,13 +249,24 @@
                 ? '<img src="' + thumbnailUrl + '" alt="">'
                 : '<span class="video-card-placeholder"><i class="fa-solid fa-circle-play"></i></span>';
 
+            var thumbnailButtonHtml = (provider === 'google_drive' && !thumbnailMediaId)
+                ? '<button type="button" class="video-card-set-thumbnail" title="Escolher miniatura"><i class="fa-solid fa-image"></i></button>'
+                : '';
+
             card.innerHTML = thumbHtml
                 + '<span class="video-card-title">' + (title || '(sem título)') + '</span>'
-                + '<button type="button" class="video-card-remove" title="Remover">&times;</button>';
+                + '<button type="button" class="video-card-remove" title="Remover">&times;</button>'
+                + thumbnailButtonHtml;
 
             videoCardsWrap.appendChild(card);
             bindVideoCardRemove(card.querySelector('.video-card-remove'));
             bindVideoCardDrag(card);
+
+            var setThumbnailButton = card.querySelector('.video-card-set-thumbnail');
+            if (setThumbnailButton) {
+                bindVideoCardSetThumbnail(setThumbnailButton);
+            }
+
             updateVideosInput();
         }
 
@@ -234,43 +286,38 @@
                 return;
             }
 
-            if (detected.provider === 'youtube') {
-                var autoThumb = 'https://img.youtube.com/vi/' + detected.id + '/hqdefault.jpg';
-                addVideoCard(url, title, null, autoThumb);
-                urlInput.value = '';
-                titleInput.value = '';
-                return;
-            }
-
-            // Google Drive: oferece escolher miniatura pela Biblioteca de
-            // Midia (nao obriga -- sem escolher, cai no placeholder).
-            if (confirm('Vídeo do Google Drive não tem miniatura automática. Quer escolher uma imagem já existente na Biblioteca de Mídia como capa?')) {
-                MediaLibrary.open(function (item) {
-                    if (item.kind !== 'image') {
-                        alert('A miniatura precisa ser uma imagem.');
-                        addVideoCard(url, title, null, '');
-                    } else {
-                        addVideoCard(url, title, item.id, item.url);
-                    }
-                    urlInput.value = '';
-                    titleInput.value = '';
-                });
-            } else {
-                addVideoCard(url, title, null, '');
-                urlInput.value = '';
-                titleInput.value = '';
-            }
+            // O video e adicionado na hora, sempre — escolher miniatura
+            // pro Google Drive e uma acao separada e opcional depois
+            // (botao no proprio cartao), nunca uma etapa que pode fazer
+            // o video inteiro se perder se o admin desistir no meio.
+            var autoThumb = detected.provider === 'youtube'
+                ? 'https://img.youtube.com/vi/' + detected.id + '/hqdefault.jpg'
+                : '';
+            addVideoCard(url, title, null, autoThumb, detected.provider);
+            urlInput.value = '';
+            titleInput.value = '';
         });
 
         videoCardsWrap.querySelectorAll('.video-card').forEach(function (card) {
             bindVideoCardRemove(card.querySelector('.video-card-remove'));
             bindVideoCardDrag(card);
+
+            var setThumbnailButton = card.querySelector('.video-card-set-thumbnail');
+            if (setThumbnailButton) {
+                bindVideoCardSetThumbnail(setThumbnailButton);
+            }
         });
 
         updateVideosInput();
 
-        document.getElementById('gallery-form').addEventListener('submit', function () {
+        document.getElementById('gallery-form').addEventListener('submit', function (event) {
             updateVideosInput();
+
+            if (videoCardsWrap.querySelectorAll('.video-card').length === 0) {
+                event.preventDefault();
+                videoErrorEl.textContent = 'Adicione pelo menos um vídeo antes de salvar.';
+                videoErrorEl.classList.remove('d-none');
+            }
         });
         <?php else: ?>
         var galleryThumbsWrap = document.getElementById('gallery-thumbs');

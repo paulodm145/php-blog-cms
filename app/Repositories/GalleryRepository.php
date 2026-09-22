@@ -444,6 +444,7 @@ class GalleryRepository
                 'url' => VideoEmbed::embedUrl($row['provider'], $row['external_id']),
                 'thumbnail_url' => $thumbnailUrl,
                 'name' => $row['title'] ?: '',
+                'provider' => $row['provider'],
                 // So usado pelo form de admin, pra resubmeter sem perder
                 // a miniatura escolhida manualmente ao editar a galeria
                 // sem mexer nesse video especifico.
