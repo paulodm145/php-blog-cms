@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Core\Text;
+use App\Core\VideoEmbed;
 use App\Database\Database;
 use PDO;
 
@@ -69,7 +70,11 @@ class GalleryRepository
             return null;
         }
 
-        $row['photos'] = $this->photosFor($id);
+        if ($row['kind'] === 'video') {
+            $row['videos'] = $this->videosFor($id);
+        } else {
+            $row['photos'] = $this->photosFor($id);
+        }
 
         return $row;
     }
@@ -85,7 +90,11 @@ class GalleryRepository
             return null;
         }
 
-        $row['photos'] = $this->photosFor((int) $row['id']);
+        if ($row['kind'] === 'video') {
+            $row['videos'] = $this->videosFor((int) $row['id']);
+        } else {
+            $row['photos'] = $this->photosFor((int) $row['id']);
+        }
 
         return $row;
     }
@@ -126,7 +135,7 @@ class GalleryRepository
         }
 
         $statement = $pdo->prepare(
-            'SELECT id, name, slug FROM galleries
+            'SELECT id, name, slug, kind FROM galleries
              WHERE deleted_at IS NULL AND slug IN (' . implode(', ', $placeholders) . ')'
         );
         $statement->execute($params);
@@ -136,16 +145,26 @@ class GalleryRepository
             return [];
         }
 
-        $galleryIds = array_column($galleries, 'id');
-        $photosByGallery = $this->photosForMany($galleryIds);
+        $photoGalleryIds = array_column(array_filter($galleries, function (array $gallery): bool {
+            return $gallery['kind'] !== 'video';
+        }), 'id');
+        $videoGalleryIds = array_column(array_filter($galleries, function (array $gallery): bool {
+            return $gallery['kind'] === 'video';
+        }), 'id');
+
+        $photosByGallery = $this->photosForMany($photoGalleryIds);
+        $videosByGallery = $this->videosForMany($videoGalleryIds);
 
         $result = [];
 
         foreach ($galleries as $gallery) {
+            $id = (int) $gallery['id'];
             $result[$gallery['slug']] = [
-                'id' => (int) $gallery['id'],
+                'id' => $id,
                 'name' => $gallery['name'],
-                'photos' => $photosByGallery[(int) $gallery['id']] ?? [],
+                'items' => $gallery['kind'] === 'video'
+                    ? ($videosByGallery[$id] ?? [])
+                    : ($photosByGallery[$id] ?? []),
             ];
         }
 
@@ -179,7 +198,7 @@ class GalleryRepository
             $replacement = '';
 
             if (isset($galleries[$slug])) {
-                $replacement = $this->renderGrid($slug, $galleries[$slug]['photos']);
+                $replacement = $this->renderGrid($slug, $galleries[$slug]['items']);
             } elseif ($isAdmin) {
                 $replacement = '<p class="text-secondary small">[galeria "' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '" não encontrada]</p>';
             }
@@ -190,7 +209,7 @@ class GalleryRepository
         return $html;
     }
 
-    private function renderGrid(string $galleryKey, array $photos): string
+    private function renderGrid(string $galleryKey, array $items): string
     {
         ob_start();
         require dirname(__DIR__) . '/Views/partials/gallery-grid.php';
@@ -201,20 +220,32 @@ class GalleryRepository
     public function create(array $data): int
     {
         $values = $this->normalize($data, null);
+        $kind = in_array($data['kind'] ?? '', ['photo', 'video'], true) ? $data['kind'] : 'photo';
+        $values['kind'] = $kind;
 
         $this->database->execute(
-            'INSERT INTO galleries (name, slug) VALUES (:name, :slug)',
+            'INSERT INTO galleries (name, slug, kind) VALUES (:name, :slug, :kind)',
             $values
         );
 
         $id = (int) $this->database->connection()->lastInsertId();
-        $this->syncMedia($id, $data['gallery_media_ids'] ?? '');
+
+        if ($kind === 'video') {
+            $this->syncVideos($id, $this->decodeVideosJson($data['gallery_videos_json'] ?? '[]'));
+        } else {
+            $this->syncMedia($id, $data['gallery_media_ids'] ?? '');
+        }
 
         return $id;
     }
 
     public function update(int $id, array $data): void
     {
+        // "kind" nunca muda numa edicao -- le da propria linha, ignora
+        // qualquer coisa que o body tenha mandado nesse campo.
+        $currentKind = $this->database->fetch('SELECT kind FROM galleries WHERE id = :id', ['id' => $id]);
+        $kind = $currentKind['kind'] ?? 'photo';
+
         $values = $this->normalize($data, $id);
         $values['id'] = $id;
 
@@ -223,7 +254,11 @@ class GalleryRepository
             $values
         );
 
-        $this->syncMedia($id, $data['gallery_media_ids'] ?? '');
+        if ($kind === 'video') {
+            $this->syncVideos($id, $this->decodeVideosJson($data['gallery_videos_json'] ?? '[]'));
+        } else {
+            $this->syncMedia($id, $data['gallery_media_ids'] ?? '');
+        }
     }
 
     public function delete(int $id): void
@@ -265,6 +300,151 @@ class GalleryRepository
         );
 
         return array_map([$this, 'withThumbnailUrl'], $rows);
+    }
+
+    /**
+     * Recria as linhas de gallery_videos a partir da lista de itens (na
+     * ordem escolhida no form) — mesmo espirito de syncMedia(), so que
+     * cada item aqui ainda nao tem id de banco nenhum antes do save
+     * (nao e upload, e so uma URL colada), entao a lista inteira viaja
+     * pronta em vez de so uma lista de ids.
+     *
+     * @param array<int, array{url: string, title: string, thumbnail_media_id: ?int}> $videos
+     */
+    private function syncVideos(int $galleryId, array $videos): void
+    {
+        $this->database->execute(
+            'DELETE FROM gallery_videos WHERE gallery_id = :gallery_id',
+            ['gallery_id' => $galleryId]
+        );
+
+        foreach (array_values($videos) as $position => $video) {
+            $url = trim((string) ($video['url'] ?? ''));
+            $detected = $url !== '' ? VideoEmbed::detect($url) : null;
+
+            if ($detected === null) {
+                // URL que nao bate com nenhum provedor conhecido —
+                // ignorada silenciosamente em vez de travar o save
+                // inteiro (mesma filosofia de uniqueSlug() abaixo: um
+                // item ruim nao pode derrubar a galeria inteira). O
+                // form (Task 5) ja valida no client antes de deixar
+                // adicionar, entao isso so acontece se alguem manipular
+                // o JSON na mao.
+                continue;
+            }
+
+            $thumbnailMediaId = isset($video['thumbnail_media_id']) && (int) $video['thumbnail_media_id'] > 0
+                ? (int) $video['thumbnail_media_id']
+                : null;
+
+            $this->database->execute(
+                'INSERT INTO gallery_videos (gallery_id, url, provider, external_id, title, thumbnail_media_id, sort_order)
+                 VALUES (:gallery_id, :url, :provider, :external_id, :title, :thumbnail_media_id, :sort_order)',
+                [
+                    'gallery_id' => $galleryId,
+                    'url' => $url,
+                    'provider' => $detected['provider'],
+                    'external_id' => $detected['external_id'],
+                    'title' => trim((string) ($video['title'] ?? '')) ?: null,
+                    'thumbnail_media_id' => $thumbnailMediaId,
+                    'sort_order' => $position,
+                ]
+            );
+        }
+    }
+
+    private function decodeVideosJson(string $json): array
+    {
+        $decoded = json_decode($json, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function videosFor(int $galleryId): array
+    {
+        return $this->mapVideoRows($this->database->fetchAll(
+            'SELECT gallery_videos.url, gallery_videos.provider, gallery_videos.external_id, gallery_videos.title,
+                    media.path AS media_path, media.thumbnail_path AS media_thumbnail_path
+             FROM gallery_videos
+             LEFT JOIN media ON media.id = gallery_videos.thumbnail_media_id AND media.deleted_at IS NULL
+             WHERE gallery_videos.gallery_id = :gallery_id
+             ORDER BY gallery_videos.sort_order',
+            ['gallery_id' => $galleryId]
+        ));
+    }
+
+    /**
+     * Mesma consulta de videosFor(), pra varias galerias de uma vez —
+     * mesmo espirito de photosForMany().
+     */
+    private function videosForMany(array $galleryIds): array
+    {
+        if (count($galleryIds) === 0) {
+            return [];
+        }
+
+        $pdo = $this->database->connection();
+        $placeholders = [];
+        $params = [];
+
+        foreach (array_values($galleryIds) as $index => $galleryId) {
+            $key = ':gallery' . $index;
+            $placeholders[] = $key;
+            $params[$key] = $galleryId;
+        }
+
+        $statement = $pdo->prepare(
+            'SELECT gallery_videos.gallery_id, gallery_videos.url, gallery_videos.provider,
+                    gallery_videos.external_id, gallery_videos.title,
+                    media.path AS media_path, media.thumbnail_path AS media_thumbnail_path
+             FROM gallery_videos
+             LEFT JOIN media ON media.id = gallery_videos.thumbnail_media_id AND media.deleted_at IS NULL
+             WHERE gallery_videos.gallery_id IN (' . implode(', ', $placeholders) . ')
+             ORDER BY gallery_videos.gallery_id, gallery_videos.sort_order'
+        );
+        $statement->execute($params);
+
+        $grouped = [];
+
+        foreach ($statement->fetchAll() as $row) {
+            $galleryId = (int) $row['gallery_id'];
+            unset($row['gallery_id']);
+            $grouped[$galleryId][] = $row;
+        }
+
+        foreach ($grouped as $galleryId => $rows) {
+            $grouped[$galleryId] = $this->mapVideoRows($rows);
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Resolve a miniatura de cada linha crua de gallery_videos, nessa
+     * ordem: thumbnail escolhida manualmente (media.thumbnail_path ou
+     * media.path) -> miniatura automatica do provedor (so YouTube tem)
+     * -> null (a grade decide o placeholder de play).
+     */
+    private function mapVideoRows(array $rows): array
+    {
+        return array_map(function (array $row): array {
+            $thumbnailUrl = null;
+
+            if (!empty($row['media_thumbnail_path'])) {
+                $thumbnailUrl = $row['media_thumbnail_path'];
+            } elseif (!empty($row['media_path'])) {
+                $thumbnailUrl = $row['media_path'];
+            } else {
+                $thumbnailUrl = VideoEmbed::autoThumbnailUrl($row['provider'], $row['external_id']);
+            }
+
+            return [
+                'type' => 'video',
+                'url' => VideoEmbed::embedUrl($row['provider'], $row['external_id']),
+                'thumbnail_url' => $thumbnailUrl,
+                'name' => $row['title'] ?: '',
+            ];
+        }, $rows);
     }
 
     /**
@@ -312,6 +492,7 @@ class GalleryRepository
     private function withThumbnailUrl(array $row): array
     {
         $row['thumbnail_url'] = $row['thumbnail_path'] ?: $row['url'];
+        $row['type'] = 'image';
         unset($row['thumbnail_path']);
 
         return $row;
@@ -319,14 +500,33 @@ class GalleryRepository
 
     private function selectSql(): string
     {
+        // item_count/cover_thumbnail_url dependem do kind: galeria de
+        // foto conta/olha gallery_media, galeria de video conta/olha
+        // gallery_videos — nunca os dois ao mesmo tempo, por isso o
+        // CASE em vez de somar as duas subqueries.
         return 'SELECT galleries.*,
-                    (SELECT COUNT(*) FROM gallery_media WHERE gallery_media.gallery_id = galleries.id) AS photo_count,
-                    (SELECT COALESCE(media.thumbnail_path, media.path)
-                       FROM gallery_media
-                       INNER JOIN media ON media.id = gallery_media.media_id AND media.deleted_at IS NULL
-                       WHERE gallery_media.gallery_id = galleries.id
-                       ORDER BY gallery_media.sort_order
-                       LIMIT 1) AS cover_thumbnail_url
+                    CASE galleries.kind
+                        WHEN \'video\' THEN (SELECT COUNT(*) FROM gallery_videos WHERE gallery_videos.gallery_id = galleries.id)
+                        ELSE (SELECT COUNT(*) FROM gallery_media WHERE gallery_media.gallery_id = galleries.id)
+                    END AS item_count,
+                    CASE galleries.kind
+                        WHEN \'video\' THEN (
+                            SELECT COALESCE(media.thumbnail_path, media.path)
+                            FROM gallery_videos
+                            LEFT JOIN media ON media.id = gallery_videos.thumbnail_media_id AND media.deleted_at IS NULL
+                            WHERE gallery_videos.gallery_id = galleries.id
+                            ORDER BY gallery_videos.sort_order
+                            LIMIT 1
+                        )
+                        ELSE (
+                            SELECT COALESCE(media.thumbnail_path, media.path)
+                            FROM gallery_media
+                            INNER JOIN media ON media.id = gallery_media.media_id AND media.deleted_at IS NULL
+                            WHERE gallery_media.gallery_id = galleries.id
+                            ORDER BY gallery_media.sort_order
+                            LIMIT 1
+                        )
+                    END AS cover_thumbnail_url
                  FROM galleries';
     }
 
