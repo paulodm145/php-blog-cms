@@ -71,7 +71,7 @@ require dirname(__DIR__) . '/partials/site-top.php';
                         <h3 class="widget-title mb-3">Screenshots</h3>
                         <?php
                             $galleryKey = 'project-' . $project['id'];
-                            $photos = $project['gallery'];
+                            $items = $project['gallery'];
                             require dirname(__DIR__) . '/partials/gallery-grid.php';
                         ?>
                     </section>

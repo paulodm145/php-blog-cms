@@ -112,6 +112,7 @@ class ProjectRepository
 
         return array_map(static function (array $row): array {
             $row['thumbnail_url'] = $row['thumbnail_path'] ?: $row['url'];
+            $row['type'] = 'image';
             unset($row['thumbnail_path']);
 
             return $row;
