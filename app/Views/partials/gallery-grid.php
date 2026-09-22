@@ -22,7 +22,6 @@
             <button
                 type="button"
                 class="gallery-grid-thumb cover d-block w-100"
-                style="height:90px"
                 data-gallery="<?= htmlspecialchars($galleryKey, ENT_QUOTES, 'UTF-8') ?>"
                 data-index="<?= (int) $index ?>"
                 data-type="<?= htmlspecialchars($item['type'], ENT_QUOTES, 'UTF-8') ?>"
