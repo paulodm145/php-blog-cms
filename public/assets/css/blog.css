@@ -395,6 +395,7 @@ a.dash-list-title:hover { color: var(--admin-primary); }
 }
 .video-card-set-thumbnail:hover { background: var(--admin-primary); }
 .video-card.dragging { opacity: .4; }
+.video-card.editing { outline: 2px solid var(--admin-primary); outline-offset: 2px; }
 
 /* Galerias reutilizaveis: codigo [@slug@] copiavel (listagem e form) e a
    lista do modal "Inserir galeria" no editor. */

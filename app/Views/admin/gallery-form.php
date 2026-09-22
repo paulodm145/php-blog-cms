@@ -38,7 +38,7 @@
                     <?php if ($item['kind'] === 'video'): ?>
                     <div class="col-12">
                         <label class="form-label d-block">Vídeos</label>
-                        <p class="text-secondary small mb-2">Cole um link do YouTube ou do Google Drive. Arraste os cartões pra reordenar.</p>
+                        <p class="text-secondary small mb-2">Cole um link do YouTube ou do Google Drive. Arraste os cartões pra reordenar, clique num cartão pra editar a URL/título, ou use o ícone de imagem pra trocar a miniatura.</p>
                         <input type="hidden" id="gallery_videos_json" name="gallery_videos_json" value="">
                         <div id="video-cards" class="d-flex flex-wrap gap-2 mb-3">
                             <?php foreach ($item['videos'] ?? [] as $video): ?>
@@ -55,9 +55,7 @@
                                     <?php endif; ?>
                                     <span class="video-card-title"><?= htmlspecialchars($video['name'] ?: '(sem título)', ENT_QUOTES, 'UTF-8') ?></span>
                                     <button type="button" class="video-card-remove" title="Remover">&times;</button>
-                                    <?php if (($video['provider'] ?? '') === 'google_drive' && empty($video['thumbnail_media_id'])): ?>
-                                        <button type="button" class="video-card-set-thumbnail" title="Escolher miniatura"><i class="fa-solid fa-image"></i></button>
-                                    <?php endif; ?>
+                                    <button type="button" class="video-card-set-thumbnail" title="Trocar miniatura"><i class="fa-solid fa-image"></i></button>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -73,6 +71,9 @@
                             </div>
                             <button class="btn btn-outline-secondary" type="button" id="add-video">
                                 <i class="fa-solid fa-plus me-1"></i> Adicionar vídeo
+                            </button>
+                            <button class="btn btn-link text-secondary d-none" type="button" id="cancel-video-edit">
+                                Cancelar edição
                             </button>
                         </div>
                         <p class="text-danger small mt-2 mb-0 d-none" id="video-error"></p>
@@ -148,7 +149,12 @@
 
         var videoCardsWrap = document.getElementById('video-cards');
         var videoErrorEl = document.getElementById('video-error');
+        var addVideoButton = document.getElementById('add-video');
+        var cancelVideoEditButton = document.getElementById('cancel-video-edit');
+        var newVideoUrlInput = document.getElementById('new-video-url');
+        var newVideoTitleInput = document.getElementById('new-video-title');
         var draggedVideoCard = null;
+        var editingCard = null;
 
         function updateVideosInput() {
             var videos = Array.prototype.map.call(videoCardsWrap.querySelectorAll('.video-card'), function (card) {
@@ -163,9 +169,46 @@
         }
 
         function bindVideoCardRemove(button) {
-            button.addEventListener('click', function () {
-                button.closest('.video-card').remove();
+            button.addEventListener('click', function (event) {
+                event.stopPropagation();
+                var card = button.closest('.video-card');
+
+                if (card === editingCard) {
+                    exitVideoEditMode();
+                }
+
+                card.remove();
                 updateVideosInput();
+            });
+        }
+
+        function enterVideoEditMode(card) {
+            editingCard = card;
+            newVideoUrlInput.value = card.getAttribute('data-url');
+            newVideoTitleInput.value = card.getAttribute('data-title') || '';
+            addVideoButton.innerHTML = '<i class="fa-solid fa-check me-1"></i> Salvar edição';
+            cancelVideoEditButton.classList.remove('d-none');
+            videoCardsWrap.querySelectorAll('.video-card').forEach(function (c) {
+                c.classList.toggle('editing', c === card);
+            });
+            newVideoUrlInput.focus();
+        }
+
+        function exitVideoEditMode() {
+            editingCard = null;
+            newVideoUrlInput.value = '';
+            newVideoTitleInput.value = '';
+            addVideoButton.innerHTML = '<i class="fa-solid fa-plus me-1"></i> Adicionar vídeo';
+            cancelVideoEditButton.classList.add('d-none');
+            videoErrorEl.classList.add('d-none');
+            videoCardsWrap.querySelectorAll('.video-card').forEach(function (c) {
+                c.classList.remove('editing');
+            });
+        }
+
+        function bindVideoCardEdit(card) {
+            card.addEventListener('click', function () {
+                enterVideoEditMode(card);
             });
         }
 
@@ -176,7 +219,8 @@
         // "Inserir" de verdade; sem isso aqui, o video inteiro sumia sem
         // aviso se o admin abrisse o seletor e desistisse).
         function bindVideoCardSetThumbnail(button) {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function (event) {
+                event.stopPropagation();
                 var card = button.closest('.video-card');
 
                 MediaLibrary.open(function (item) {
@@ -199,7 +243,9 @@
                         card.querySelector('img').replaceWith(img);
                     }
 
-                    button.remove();
+                    // O botao continua no cartao (nao remove mais) --
+                    // trocar miniatura de novo, quantas vezes quiser, e
+                    // uma acao sempre disponivel, nao so na primeira vez.
                     updateVideosInput();
                 });
             });
@@ -249,32 +295,65 @@
                 ? '<img src="' + thumbnailUrl + '" alt="">'
                 : '<span class="video-card-placeholder"><i class="fa-solid fa-circle-play"></i></span>';
 
-            var thumbnailButtonHtml = (provider === 'google_drive' && !thumbnailMediaId)
-                ? '<button type="button" class="video-card-set-thumbnail" title="Escolher miniatura"><i class="fa-solid fa-image"></i></button>'
-                : '';
-
             card.innerHTML = thumbHtml
                 + '<span class="video-card-title">' + (title || '(sem título)') + '</span>'
                 + '<button type="button" class="video-card-remove" title="Remover">&times;</button>'
-                + thumbnailButtonHtml;
+                + '<button type="button" class="video-card-set-thumbnail" title="Trocar miniatura"><i class="fa-solid fa-image"></i></button>';
 
             videoCardsWrap.appendChild(card);
-            bindVideoCardRemove(card.querySelector('.video-card-remove'));
-            bindVideoCardDrag(card);
-
-            var setThumbnailButton = card.querySelector('.video-card-set-thumbnail');
-            if (setThumbnailButton) {
-                bindVideoCardSetThumbnail(setThumbnailButton);
-            }
-
+            bindVideoCard(card);
             updateVideosInput();
+
+            return card;
         }
 
-        document.getElementById('add-video').addEventListener('click', function () {
-            var urlInput = document.getElementById('new-video-url');
-            var titleInput = document.getElementById('new-video-title');
-            var url = urlInput.value.trim();
-            var title = titleInput.value.trim();
+        // Reaplica os data-* + a aparencia visual de um cartao existente,
+        // sem recria-lo -- mantem a posicao dele na lista (editar nao deve
+        // mandar o cartao pro fim, so atualizar o que mudou).
+        function updateVideoCard(card, url, title, detected) {
+            card.setAttribute('data-url', url);
+            card.setAttribute('data-title', title);
+            card.setAttribute('data-provider', detected.provider);
+
+            var hasManualThumbnail = parseInt(card.getAttribute('data-thumbnail-media-id'), 10) > 0;
+
+            // So recalcula a miniatura automatica se ninguem escolheu uma
+            // manualmente pra esse cartao ainda -- editar URL/titulo nunca
+            // descarta uma miniatura escolhida de proposito (isso e o que
+            // o botao de miniatura, separado, e pra fazer).
+            if (!hasManualThumbnail) {
+                var autoThumb = detected.provider === 'youtube'
+                    ? 'https://img.youtube.com/vi/' + detected.id + '/hqdefault.jpg'
+                    : '';
+                card.setAttribute('data-thumbnail-url', autoThumb);
+
+                var mediaEl = card.querySelector('img, .video-card-placeholder');
+                if (autoThumb) {
+                    var img = document.createElement('img');
+                    img.src = autoThumb;
+                    img.alt = '';
+                    mediaEl.replaceWith(img);
+                } else if (mediaEl.tagName === 'IMG') {
+                    var placeholder = document.createElement('span');
+                    placeholder.className = 'video-card-placeholder';
+                    placeholder.innerHTML = '<i class="fa-solid fa-circle-play"></i>';
+                    mediaEl.replaceWith(placeholder);
+                }
+            }
+
+            card.querySelector('.video-card-title').textContent = title || '(sem título)';
+        }
+
+        function bindVideoCard(card) {
+            bindVideoCardRemove(card.querySelector('.video-card-remove'));
+            bindVideoCardDrag(card);
+            bindVideoCardEdit(card);
+            bindVideoCardSetThumbnail(card.querySelector('.video-card-set-thumbnail'));
+        }
+
+        addVideoButton.addEventListener('click', function () {
+            var url = newVideoUrlInput.value.trim();
+            var title = newVideoTitleInput.value.trim();
 
             videoErrorEl.classList.add('d-none');
 
@@ -286,6 +365,13 @@
                 return;
             }
 
+            if (editingCard) {
+                updateVideoCard(editingCard, url, title, detected);
+                updateVideosInput();
+                exitVideoEditMode();
+                return;
+            }
+
             // O video e adicionado na hora, sempre — escolher miniatura
             // pro Google Drive e uma acao separada e opcional depois
             // (botao no proprio cartao), nunca uma etapa que pode fazer
@@ -294,19 +380,15 @@
                 ? 'https://img.youtube.com/vi/' + detected.id + '/hqdefault.jpg'
                 : '';
             addVideoCard(url, title, null, autoThumb, detected.provider);
-            urlInput.value = '';
-            titleInput.value = '';
+            newVideoUrlInput.value = '';
+            newVideoTitleInput.value = '';
         });
 
-        videoCardsWrap.querySelectorAll('.video-card').forEach(function (card) {
-            bindVideoCardRemove(card.querySelector('.video-card-remove'));
-            bindVideoCardDrag(card);
-
-            var setThumbnailButton = card.querySelector('.video-card-set-thumbnail');
-            if (setThumbnailButton) {
-                bindVideoCardSetThumbnail(setThumbnailButton);
-            }
+        cancelVideoEditButton.addEventListener('click', function () {
+            exitVideoEditMode();
         });
+
+        videoCardsWrap.querySelectorAll('.video-card').forEach(bindVideoCard);
 
         updateVideosInput();
 
