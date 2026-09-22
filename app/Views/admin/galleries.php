@@ -4,7 +4,12 @@
                     <h1 class="h3 mb-1">Galerias</h1>
                     <p class="text-secondary mb-0">Logado como <?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
-                <a class="btn btn-primary" href="/admin/galerias/create">Nova galeria</a>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-primary" href="/admin/galerias/create?kind=video">
+                        <i class="fa-solid fa-clapperboard me-1"></i> Nova galeria de vídeos
+                    </a>
+                    <a class="btn btn-primary" href="/admin/galerias/create">Nova galeria de fotos</a>
+                </div>
             </div>
 
             <form class="row g-2 align-items-end mb-4" method="get" action="/admin/galerias">
@@ -30,7 +35,8 @@
                         <tr>
                             <th>Capa</th>
                             <th>Nome</th>
-                            <th>Fotos</th>
+                            <th>Tipo</th>
+                            <th>Itens</th>
                             <th>Código</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -50,7 +56,14 @@
                                         <?= htmlspecialchars($gallery['name'], ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                 </td>
-                                <td><?= (int) $gallery['photo_count'] ?></td>
+                                <td>
+                                    <?php if ($gallery['kind'] === 'video'): ?>
+                                        <span class="badge text-bg-secondary"><i class="fa-solid fa-clapperboard me-1"></i>Vídeo</span>
+                                    <?php else: ?>
+                                        <span class="badge text-bg-secondary"><i class="fa-solid fa-photo-film me-1"></i>Foto</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= (int) $gallery['item_count'] ?></td>
                                 <td>
                                     <code class="gallery-shortcode" data-shortcode="[@<?= htmlspecialchars($gallery['slug'], ENT_QUOTES, 'UTF-8') ?>@]">[@<?= htmlspecialchars($gallery['slug'], ENT_QUOTES, 'UTF-8') ?>@]</code>
                                     <button type="button" class="admin-action-link gallery-copy-shortcode" title="Copiar código">Copiar</button>
@@ -64,7 +77,7 @@
                             </tr>
                         <?php endforeach; ?>
                         <?php if (count($galleries) === 0): ?>
-                            <tr><td colspan="5" class="text-secondary">Nenhuma galeria encontrada.</td></tr>
+                            <tr><td colspan="6" class="text-secondary">Nenhuma galeria encontrada.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

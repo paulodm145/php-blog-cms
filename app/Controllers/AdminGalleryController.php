@@ -42,14 +42,18 @@ class AdminGalleryController
 
     public function create(): void
     {
+        $kind = ($_GET['kind'] ?? '') === 'video' ? 'video' : 'photo';
+
         View::render('admin/gallery-form', [
-            'title' => 'Nova galeria | Admin paulorb.dev',
+            'title' => ($kind === 'video' ? 'Nova galeria de vídeos' : 'Nova galeria de fotos') . ' | Admin paulorb.dev',
             'user' => Auth::user(),
             'item' => [
                 'id' => null,
                 'name' => '',
                 'slug' => '',
+                'kind' => $kind,
                 'photos' => [],
+                'videos' => [],
             ],
             'isNew' => true,
         ]);

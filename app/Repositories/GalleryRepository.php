@@ -364,6 +364,7 @@ class GalleryRepository
     {
         return $this->mapVideoRows($this->database->fetchAll(
             'SELECT gallery_videos.url, gallery_videos.provider, gallery_videos.external_id, gallery_videos.title,
+                    gallery_videos.thumbnail_media_id,
                     media.path AS media_path, media.thumbnail_path AS media_thumbnail_path
              FROM gallery_videos
              LEFT JOIN media ON media.id = gallery_videos.thumbnail_media_id AND media.deleted_at IS NULL
@@ -395,7 +396,7 @@ class GalleryRepository
 
         $statement = $pdo->prepare(
             'SELECT gallery_videos.gallery_id, gallery_videos.url, gallery_videos.provider,
-                    gallery_videos.external_id, gallery_videos.title,
+                    gallery_videos.external_id, gallery_videos.title, gallery_videos.thumbnail_media_id,
                     media.path AS media_path, media.thumbnail_path AS media_thumbnail_path
              FROM gallery_videos
              LEFT JOIN media ON media.id = gallery_videos.thumbnail_media_id AND media.deleted_at IS NULL
@@ -443,6 +444,10 @@ class GalleryRepository
                 'url' => VideoEmbed::embedUrl($row['provider'], $row['external_id']),
                 'thumbnail_url' => $thumbnailUrl,
                 'name' => $row['title'] ?: '',
+                // So usado pelo form de admin, pra resubmeter sem perder
+                // a miniatura escolhida manualmente ao editar a galeria
+                // sem mexer nesse video especifico.
+                'thumbnail_media_id' => isset($row['thumbnail_media_id']) ? (int) $row['thumbnail_media_id'] : null,
             ];
         }, $rows);
     }

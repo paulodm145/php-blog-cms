@@ -8,12 +8,19 @@
                     <img src="<?= htmlspecialchars($gallery['cover_thumbnail_url'], ENT_QUOTES, 'UTF-8') ?>" alt="" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
                 <?php else: ?>
                     <span class="d-inline-flex align-items-center justify-content-center text-secondary" style="width: 40px; height: 40px; border-radius: 4px; background: var(--admin-bg);">
-                        <i class="fa-solid fa-photo-film"></i>
+                        <i class="fa-solid <?= $gallery['kind'] === 'video' ? 'fa-clapperboard' : 'fa-photo-film' ?>"></i>
                     </span>
                 <?php endif; ?>
                 <span>
                     <?= htmlspecialchars($gallery['name'], ENT_QUOTES, 'UTF-8') ?>
-                    <span class="text-secondary small d-block"><?= (int) $gallery['photo_count'] ?> foto<?= (int) $gallery['photo_count'] === 1 ? '' : 's' ?></span>
+                    <span class="text-secondary small d-block">
+                        <?= (int) $gallery['item_count'] ?>
+                        <?php if ($gallery['kind'] === 'video'): ?>
+                            vídeo<?= (int) $gallery['item_count'] === 1 ? '' : 's' ?>
+                        <?php else: ?>
+                            foto<?= (int) $gallery['item_count'] === 1 ? '' : 's' ?>
+                        <?php endif; ?>
+                    </span>
                 </span>
             </button>
         <?php endforeach; ?>
