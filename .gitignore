@@ -28,9 +28,11 @@
 !/.claude/skills/
 /.claude/skills/*
 !/.claude/skills/publicar-conteudo/
+!/.claude/skills/linkedin-post/
 /.agents/
 /skills-lock.json
 .codex
 
 # Credenciais locais da automação de LinkedIn — nunca versionar.
 /scripts/linkedin/.credentials.json
+__pycache__/
