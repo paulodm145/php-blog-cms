@@ -281,7 +281,7 @@ a.page-num:active { transform: scale(.94); }
 .lightbox-video { width: 100%; max-width: 960px; aspect-ratio: 16 / 9; border: 0; border-radius: 6px; }
 /* Placeholder de miniatura pra video sem thumbnail resolvida (Google
    Drive sem imagem escolhida manualmente no admin). */
-.gallery-grid-thumb-placeholder { background: #1a1a1a; color: rgba(255, 255, 255, .75); font-size: 1.6rem; }
+.gallery-grid-thumb-placeholder { background: linear-gradient(135deg, #2f6fe0, #6da4f5); color: rgba(255, 255, 255, .92); font-size: 2.6rem; }
 .lightbox-nav {
     background: rgba(255, 255, 255, .12); color: #fff; border: 0; border-radius: 50%;
     width: 44px; height: 44px; flex: 0 0 auto; font-size: 1.1rem; cursor: pointer;
