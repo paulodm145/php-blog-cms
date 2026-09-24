@@ -31,3 +31,6 @@
 /.agents/
 /skills-lock.json
 .codex
+
+# Credenciais locais da automação de LinkedIn — nunca versionar.
+/scripts/linkedin/.credentials.json
