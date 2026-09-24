@@ -56,9 +56,11 @@ def call_linkedin(payload, access_token):
     req.add_header('X-Restli-Protocol-Version', '2.0.0')
     try:
         with urllib.request.urlopen(req) as resp:
-            return resp.status, dict(resp.headers)
+            return resp.status, {k.lower(): v for k, v in resp.headers.items()}
     except urllib.error.HTTPError as e:
-        return e.code, dict(e.headers)
+        return e.code, {k.lower(): v for k, v in e.headers.items()}
+    except urllib.error.URLError as e:
+        raise RuntimeError('Falha de rede ao publicar no LinkedIn: {}'.format(e.reason))
 
 
 def main():
@@ -69,7 +71,7 @@ def main():
 
     try:
         text = read_text(args)
-    except ValueError as e:
+    except (ValueError, FileNotFoundError) as e:
         print(str(e))
         sys.exit(1)
 
@@ -79,18 +81,26 @@ def main():
         print(str(e))
         sys.exit(1)
 
-    if credentials.is_token_expired(creds):
+    try:
+        expired = credentials.is_token_expired(creds)
+        person_urn = creds['person_urn']
+        access_token = creds['access_token']
+    except KeyError as e:
+        print('Arquivo de credenciais incompleto (faltando {}). Rode scripts/linkedin/authorize.py de novo.'.format(e))
+        sys.exit(1)
+
+    if expired:
         print('Token expirado. Rode scripts/linkedin/authorize.py de novo antes de publicar.')
         sys.exit(1)
 
-    payload = build_post_payload(creds['person_urn'], text)
+    payload = build_post_payload(person_urn, text)
 
     if args.dry_run:
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         return
 
-    status, headers = call_linkedin(payload, creds['access_token'])
     try:
+        status, headers = call_linkedin(payload, access_token)
         url = parse_post_response(status, headers)
     except RuntimeError as e:
         print(str(e))

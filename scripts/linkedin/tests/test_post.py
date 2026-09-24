@@ -3,8 +3,9 @@ import os
 import sys
 import tempfile
 import unittest
+import urllib.error
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
@@ -51,6 +52,24 @@ class TestReadText(unittest.TestCase):
             self.assertEqual(text, 'Texto do post')
         finally:
             os.remove(path)
+
+
+class TestCallLinkedin(unittest.TestCase):
+    def test_normalizes_header_casing_from_response(self):
+        mock_resp = MagicMock()
+        mock_resp.status = 201
+        mock_resp.headers = {'X-RestLi-Id': 'urn:li:share:123'}
+        mock_resp.__enter__.return_value = mock_resp
+        mock_resp.__exit__.return_value = False
+        with patch('urllib.request.urlopen', return_value=mock_resp):
+            status, headers = post.call_linkedin({'author': 'x'}, 'token')
+        self.assertEqual(status, 201)
+        self.assertEqual(headers.get('x-restli-id'), 'urn:li:share:123')
+
+    def test_network_error_raises_runtime_error(self):
+        with patch('urllib.request.urlopen', side_effect=urllib.error.URLError('sem rota')):
+            with self.assertRaises(RuntimeError):
+                post.call_linkedin({'author': 'x'}, 'token')
 
 
 if __name__ == '__main__':

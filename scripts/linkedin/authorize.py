@@ -3,6 +3,7 @@ import http.server
 import json
 import secrets
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -14,6 +15,7 @@ import oauth
 
 REDIRECT_URI = 'http://localhost:8734/callback'
 CALLBACK_PORT = 8734
+CALLBACK_TIMEOUT_SECONDS = 180
 TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken'
 USERINFO_ENDPOINT = 'https://api.linkedin.com/v2/userinfo'
 
@@ -42,9 +44,27 @@ class CallbackHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def wait_for_callback():
-    server = http.server.HTTPServer(('localhost', CALLBACK_PORT), CallbackHandler)
-    server.handle_request()
+def wait_for_callback(timeout=CALLBACK_TIMEOUT_SECONDS):
+    try:
+        server = http.server.HTTPServer(('localhost', CALLBACK_PORT), CallbackHandler)
+    except OSError as e:
+        raise RuntimeError(
+            'Não consegui abrir a porta {} pra receber o callback do LinkedIn ({}). '
+            'Feche qualquer processo antigo de authorize.py e tente de novo.'.format(CALLBACK_PORT, e)
+        )
+
+    server.timeout = timeout
+    deadline = time.monotonic() + timeout
+    try:
+        while not _callback_result and time.monotonic() < deadline:
+            server.handle_request()
+    finally:
+        server.server_close()
+
+    if not _callback_result:
+        raise TimeoutError(
+            'Nenhum callback do LinkedIn recebido em {}s — autorização não concluída.'.format(timeout)
+        )
     return dict(_callback_result)
 
 
@@ -78,6 +98,7 @@ def load_or_ask_app_credentials():
 
 def main():
     creds = load_or_ask_app_credentials()
+    credentials.save(creds)
 
     state = secrets.token_urlsafe(16)
     url = oauth.build_authorization_url(creds['client_id'], REDIRECT_URI, state)
@@ -85,7 +106,11 @@ def main():
     print(url)
     webbrowser.open(url)
 
-    result = wait_for_callback()
+    try:
+        result = wait_for_callback()
+    except (TimeoutError, RuntimeError) as e:
+        print(str(e))
+        sys.exit(1)
 
     if result.get('error'):
         print('Autorização cancelada ou negada: {}'.format(result['error']))
@@ -105,9 +130,17 @@ def main():
         print('LinkedIn recusou a troca do código por token: HTTP {}'.format(e.code))
         sys.exit(1)
 
-    access_token = token_response['access_token']
+    access_token = token_response.get('access_token')
+    if not access_token:
+        print('Resposta da LinkedIn sem access_token — algo deu errado na troca do código.')
+        sys.exit(1)
     expires_in = token_response.get('expires_in', 60 * 24 * 3600)
-    person_urn = fetch_person_urn(access_token)
+
+    try:
+        person_urn = fetch_person_urn(access_token)
+    except (urllib.error.HTTPError, urllib.error.URLError, KeyError) as e:
+        print('Falha ao buscar os dados do perfil na LinkedIn depois de obter o token: {}'.format(e))
+        sys.exit(1)
 
     creds.update({
         'access_token': access_token,
