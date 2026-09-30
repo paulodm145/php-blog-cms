@@ -116,7 +116,7 @@ class AdminResumeDocumentFolderController
         $descendantIds = $this->folders->descendantIds($folderId);
         $paths = (new ResumeExperienceDocumentRepository())->pathsByFolderIds($descendantIds);
 
-        $this->folders->delete($folderId);
+        $this->folders->deleteMany($descendantIds);
 
         foreach ($paths as $path) {
             $absolutePath = dirname(__DIR__, 2) . $path;

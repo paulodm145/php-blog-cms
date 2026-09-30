@@ -106,6 +106,38 @@ class ResumeDocumentFolderRepository
         $this->allCache = null;
     }
 
+    /**
+     * Apaga varias pastas num unico DELETE, em vez de confiar no
+     * ON DELETE CASCADE de fk_rdf_parent pra descer a arvore sozinho — o
+     * InnoDB limita cascata de FK auto-referente a 15 niveis (ER_FK_DEPTH_EXCEEDED);
+     * uma unica instrucao IN (...) nao tem esse limite. Usado na exclusao
+     * de uma pasta inteira, com $ids vindo de descendantIds().
+     */
+    public function deleteMany(array $ids): void
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if (empty($ids)) {
+            return;
+        }
+
+        $placeholders = [];
+        $params = [];
+
+        foreach ($ids as $index => $id) {
+            $key = 'id' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+
+        $this->database->execute(
+            'DELETE FROM resume_document_folders WHERE id IN (' . implode(',', $placeholders) . ')',
+            $params
+        );
+
+        $this->allCache = null;
+    }
+
     public function breadcrumb(int $folderId): array
     {
         $byId = $this->indexById($this->all());
