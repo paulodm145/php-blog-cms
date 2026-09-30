@@ -26,5 +26,6 @@ $documentSizeLabel = ((int) $document['size']) >= 1048576
     </div>
     <span class="text-secondary small flex-shrink-0"><?= $documentSizeLabel ?></span>
     <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/download" title="Baixar"><i class="fa-solid fa-download"></i></a>
+    <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/mover" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>
     <button class="admin-action-link admin-action-danger flex-shrink-0" type="button" data-delete-document title="Excluir"><i class="fa-solid fa-trash"></i></button>
 </li>

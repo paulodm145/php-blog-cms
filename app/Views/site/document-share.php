@@ -21,8 +21,10 @@ require dirname(__DIR__) . '/partials/site-top.php';
             <h1 class="h3 mb-4">Documentos compartilhados</h1>
             <?php foreach ($groups as $group): ?>
                 <div class="border rounded p-3 mb-3">
-                    <h2 class="h6 mb-1"><?= htmlspecialchars($group['role'], ENT_QUOTES, 'UTF-8') ?> — <?= htmlspecialchars($group['company'], ENT_QUOTES, 'UTF-8') ?></h2>
-                    <p class="text-muted small mb-3"><?= htmlspecialchars($group['period'], ENT_QUOTES, 'UTF-8') ?></p>
+                    <h2 class="h6 mb-1"><?= htmlspecialchars($group['title'], ENT_QUOTES, 'UTF-8') ?></h2>
+                    <?php if (!empty($group['subtitle'])): ?>
+                        <p class="text-muted small mb-3"><?= htmlspecialchars($group['subtitle'], ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php endif; ?>
                     <ul class="list-group">
                         <?php foreach ($group['documents'] as $document): ?>
                             <li class="list-group-item d-flex align-items-center gap-2">

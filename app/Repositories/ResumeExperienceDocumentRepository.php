@@ -17,7 +17,7 @@ class ResumeExperienceDocumentRepository
     {
         $experiences = $this->database->fetchAll('SELECT * FROM resume_experience ORDER BY sort_order, id');
         $documents = $this->database->fetchAll(
-            'SELECT * FROM resume_experience_documents WHERE deleted_at IS NULL ORDER BY created_at DESC'
+            'SELECT * FROM resume_experience_documents WHERE experience_id IS NOT NULL AND deleted_at IS NULL ORDER BY created_at DESC'
         );
 
         $byExperience = [];
@@ -80,10 +80,11 @@ class ResumeExperienceDocumentRepository
         $pdo = $this->database->connection();
 
         $this->database->execute(
-            'INSERT INTO resume_experience_documents (experience_id, file_name, original_name, path, mime_type, size, caption, uploaded_by)
-             VALUES (:experience_id, :file_name, :original_name, :path, :mime_type, :size, :caption, :uploaded_by)',
+            'INSERT INTO resume_experience_documents (experience_id, folder_id, file_name, original_name, path, mime_type, size, caption, uploaded_by)
+             VALUES (:experience_id, :folder_id, :file_name, :original_name, :path, :mime_type, :size, :caption, :uploaded_by)',
             [
-                'experience_id' => $data['experience_id'],
+                'experience_id' => $data['experience_id'] ?? null,
+                'folder_id' => $data['folder_id'] ?? null,
                 'file_name' => $data['file_name'],
                 'original_name' => $data['original_name'],
                 'path' => $data['path'],
@@ -121,5 +122,46 @@ class ResumeExperienceDocumentRepository
         );
 
         return array_column($rows, 'path');
+    }
+
+    public function listByFolder(?int $folderId): array
+    {
+        return $this->database->fetchAll(
+            'SELECT * FROM resume_experience_documents WHERE experience_id IS NULL AND folder_id <=> :folder_id AND deleted_at IS NULL ORDER BY created_at DESC',
+            ['folder_id' => $folderId]
+        );
+    }
+
+    public function pathsByFolderIds(array $folderIds): array
+    {
+        $folderIds = array_values(array_unique(array_map('intval', $folderIds)));
+
+        if (empty($folderIds)) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+
+        foreach ($folderIds as $index => $id) {
+            $key = 'folder' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT path FROM resume_experience_documents WHERE folder_id IN (' . implode(',', $placeholders) . ')',
+            $params
+        );
+
+        return array_column($rows, 'path');
+    }
+
+    public function move(int $id, ?int $experienceId, ?int $folderId, string $path): void
+    {
+        $this->database->execute(
+            'UPDATE resume_experience_documents SET experience_id = :experience_id, folder_id = :folder_id, path = :path WHERE id = :id',
+            ['experience_id' => $experienceId, 'folder_id' => $folderId, 'path' => $path, 'id' => $id]
+        );
     }
 }

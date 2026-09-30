@@ -67,31 +67,38 @@ class ResumeDocumentShareRepository
         }
 
         $documents = $this->database->fetchAll(
-            'SELECT d.*, e.role, e.company, e.period, e.sort_order AS experience_sort_order
+            'SELECT d.*, e.role, e.company, e.period, e.sort_order AS experience_sort_order, f.name AS folder_name
              FROM resume_document_share_items si
              INNER JOIN resume_experience_documents d ON d.id = si.document_id AND d.deleted_at IS NULL
-             INNER JOIN resume_experience e ON e.id = d.experience_id
+             LEFT JOIN resume_experience e ON e.id = d.experience_id
+             LEFT JOIN resume_document_folders f ON f.id = d.folder_id
              WHERE si.share_id = :share_id
-             ORDER BY e.sort_order, e.id, d.created_at DESC',
+             ORDER BY (d.experience_id IS NULL), e.sort_order, f.name, d.created_at DESC',
             ['share_id' => $share['id']]
         );
 
         $groups = [];
 
         foreach ($documents as $document) {
-            $experienceId = (int) $document['experience_id'];
-
-            if (!isset($groups[$experienceId])) {
-                $groups[$experienceId] = [
-                    'id' => $experienceId,
-                    'role' => $document['role'],
-                    'company' => $document['company'],
-                    'period' => $document['period'],
-                    'documents' => [],
-                ];
+            if ($document['experience_id'] !== null) {
+                $key = 'experience-' . $document['experience_id'];
+                $title = $document['role'] . ' — ' . $document['company'];
+                $subtitle = $document['period'];
+            } elseif ($document['folder_id'] !== null) {
+                $key = 'folder-' . $document['folder_id'];
+                $title = 'Pasta: ' . $document['folder_name'];
+                $subtitle = null;
+            } else {
+                $key = 'folder-root';
+                $title = 'Documentos';
+                $subtitle = null;
             }
 
-            $groups[$experienceId]['documents'][] = $document;
+            if (!isset($groups[$key])) {
+                $groups[$key] = ['title' => $title, 'subtitle' => $subtitle, 'documents' => []];
+            }
+
+            $groups[$key]['documents'][] = $document;
         }
 
         return array_values($groups);
