@@ -36,6 +36,14 @@
             <?php if (!$isNew): ?>
                 <form id="delete-form" method="post" action="/admin/curriculo/experiencia/<?= (int) $item['id'] ?>/delete" onsubmit="return confirm('Excluir esta experiência?');"></form>
             <?php endif; ?>
+            <?php if (!$isNew): ?>
+                <hr class="my-4">
+                <h2 class="h5 mb-3">Documentos desta experiência</h2>
+                <?php $group = ['id' => $item['id'], 'documents' => $documents]; ?>
+                <?php require __DIR__ . '/partials/resume-document-panel.php'; ?>
+            <?php endif; ?>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<script src="/assets/js/resume-documents.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/resume-documents.js') ?: '1' ?>"></script>
 </body>
 </html>

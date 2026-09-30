@@ -20,7 +20,11 @@ $pageUrl = $canonical ?? $appUrl;
 // so entra no <script> inline se bater exatamente no formato do GA4, pra
 // nunca virar um vetor de injecao mesmo que o valor tenha chegado no banco
 // por outro caminho que nao o formulario de configuracoes.
-$gaId = $settings['google_analytics_id'] ?? '';
+// disableAnalytics: paginas cujo proprio URL carrega um segredo (ex.: token
+// de compartilhamento de documentos) nao podem rodar GA — o gtag('config')
+// coleta page_location (a URL completa, token incluso) e manda pro Google.
+$disableAnalytics = $disableAnalytics ?? false;
+$gaId = $disableAnalytics ? '' : ($settings['google_analytics_id'] ?? '');
 $gaId = preg_match('/^G-[A-Z0-9]+$/', $gaId) === 1 ? $gaId : '';
 ?>
 <!doctype html>

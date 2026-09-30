@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\ErrorPage;
 use App\Core\View;
+use App\Repositories\ResumeExperienceDocumentRepository;
 use App\Repositories\ResumeExperienceRepository;
 
 class AdminResumeExperienceController
@@ -24,6 +25,7 @@ class AdminResumeExperienceController
             'user' => Auth::user(),
             'item' => ['id' => null, 'role' => '', 'company' => '', 'period' => '', 'description' => '', 'sort_order' => 0],
             'isNew' => true,
+            'documents' => [],
         ]);
     }
 
@@ -47,6 +49,7 @@ class AdminResumeExperienceController
             'user' => Auth::user(),
             'item' => $item,
             'isNew' => false,
+            'documents' => (new ResumeExperienceDocumentRepository())->listByExperience((int) $id),
         ]);
     }
 
@@ -58,7 +61,19 @@ class AdminResumeExperienceController
 
     public function delete(string $id): void
     {
-        $this->experience->delete((int) $id);
+        $experienceId = (int) $id;
+        $documentPaths = (new ResumeExperienceDocumentRepository())->pathsByExperience($experienceId);
+
+        $this->experience->delete($experienceId);
+
+        foreach ($documentPaths as $path) {
+            $absolutePath = dirname(__DIR__, 2) . $path;
+
+            if (is_file($absolutePath)) {
+                unlink($absolutePath);
+            }
+        }
+
         header('Location: /admin/curriculo?saved=1#tab-experiencia');
     }
 

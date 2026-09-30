@@ -1,0 +1,8 @@
+# Segunda camada de protecao pra storage/uploads/resume-documents/ (contratos,
+# notas fiscais): o .htaccess da raiz ja bloqueia qualquer request pra
+# storage/ inteiro, mas essa pasta guarda especificamente documentos
+# privados sensiveis — se a regra da raiz um dia for removida, alterada ou
+# simplesmente nao for lida (hospedagem que ignora .htaccess fora da raiz
+# do vhost, por exemplo), essa segunda regra continua barrando.
+Require all denied
+Deny from all

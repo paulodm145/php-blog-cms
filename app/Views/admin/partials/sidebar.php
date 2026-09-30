@@ -30,6 +30,7 @@ $navItems = [
     ['href' => '/admin/paginas', 'icon' => 'fa-file-lines', 'label' => 'Páginas', 'prefix' => '/admin/paginas'],
     ['href' => '/admin/projetos', 'icon' => 'fa-diagram-project', 'label' => 'Projetos', 'prefix' => '/admin/projetos'],
     ['href' => '/admin/curriculo', 'icon' => 'fa-id-card', 'label' => 'Currículo', 'prefix' => '/admin/curriculo'],
+    ['href' => '/admin/curriculo/documentos', 'icon' => 'fa-folder-open', 'label' => 'Documentos', 'prefix' => '/admin/curriculo/documentos'],
     ['href' => '/admin/comentarios', 'icon' => 'fa-comments', 'label' => 'Comentários', 'prefix' => '/admin/comentarios', 'badge' => $pendingComments],
     ['href' => '/admin/users', 'icon' => 'fa-users', 'label' => 'Usuários', 'prefix' => '/admin/users'],
     ['href' => '/admin/settings', 'icon' => 'fa-gear', 'label' => 'Configurações', 'prefix' => '/admin/settings'],
