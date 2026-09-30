@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\ErrorPage;
 use App\Core\View;
+use App\Repositories\ResumeExperienceDocumentRepository;
 use App\Repositories\ResumeExperienceRepository;
 
 class AdminResumeExperienceController
@@ -24,6 +25,7 @@ class AdminResumeExperienceController
             'user' => Auth::user(),
             'item' => ['id' => null, 'role' => '', 'company' => '', 'period' => '', 'description' => '', 'sort_order' => 0],
             'isNew' => true,
+            'documents' => [],
         ]);
     }
 
@@ -47,6 +49,7 @@ class AdminResumeExperienceController
             'user' => Auth::user(),
             'item' => $item,
             'isNew' => false,
+            'documents' => (new ResumeExperienceDocumentRepository())->listByExperience((int) $id),
         ]);
     }
 
