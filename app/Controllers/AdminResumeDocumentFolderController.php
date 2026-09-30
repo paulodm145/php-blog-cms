@@ -10,6 +10,8 @@ use App\Repositories\ResumeExperienceDocumentRepository;
 
 class AdminResumeDocumentFolderController
 {
+    private const NAME_MAX_LENGTH = 160;
+
     private $folders;
 
     public function __construct()
@@ -20,7 +22,7 @@ class AdminResumeDocumentFolderController
 
     public function createForm(): void
     {
-        $parentId = $this->resolveFolderId($_GET['parent_id'] ?? null);
+        $parentId = $this->folders->resolveId($_GET['parent_id'] ?? null);
 
         View::render('admin/resume-document-folder-form', [
             'title' => 'Nova pasta | Admin paulorb.dev',
@@ -35,12 +37,18 @@ class AdminResumeDocumentFolderController
 
     public function store(): void
     {
-        $parentId = $this->resolveFolderId($_POST['parent_id'] ?? null);
+        $parentId = $this->folders->resolveId($_POST['parent_id'] ?? null);
         $name = trim((string) ($_POST['name'] ?? ''));
 
-        if ($name !== '') {
-            $this->folders->create($parentId, $name);
+        if ($name === '' || mb_strlen($name) > self::NAME_MAX_LENGTH) {
+            header(
+                'Location: /admin/curriculo/documentos/pastas/criar?parent_id=' . ($parentId !== null ? $parentId : '')
+                . '&erro=' . urlencode('Informe um nome de pasta com até ' . self::NAME_MAX_LENGTH . ' caracteres.')
+            );
+            return;
         }
+
+        $this->folders->create($parentId, $name);
 
         header('Location: ' . $this->folderUrl($parentId));
     }
@@ -76,13 +84,22 @@ class AdminResumeDocumentFolderController
             return;
         }
 
+        $parentId = $folder['parent_id'] !== null ? (int) $folder['parent_id'] : null;
         $name = trim((string) ($_POST['name'] ?? ''));
 
-        if ($name !== '') {
-            $this->folders->rename((int) $id, $name);
+        if ($name === '' || mb_strlen($name) > self::NAME_MAX_LENGTH) {
+            header(
+                'Location: /admin/curriculo/documentos/pastas/' . (int) $id . '/renomear?erro='
+                . urlencode('Informe um nome de pasta com até ' . self::NAME_MAX_LENGTH . ' caracteres.')
+            );
+            return;
         }
 
-        header('Location: ' . $this->folderUrl((int) $id));
+        $this->folders->rename((int) $id, $name);
+
+        // Volta pra pasta-mae (onde o card desta pasta esta listado), nao
+        // pra dentro dela mesma — renomear nao é "entrar" na pasta.
+        header('Location: ' . $this->folderUrl($parentId));
     }
 
     public function delete(string $id): void
@@ -126,12 +143,14 @@ class AdminResumeDocumentFolderController
             return;
         }
 
+        $parentId = $folder['parent_id'] !== null ? (int) $folder['parent_id'] : null;
+
         View::render('admin/resume-document-move-form', [
             'title' => 'Mover pasta | Admin paulorb.dev',
             'user' => Auth::user(),
             'subjectLabel' => $folder['name'],
             'formAction' => '/admin/curriculo/documentos/pastas/' . $folderId . '/mover',
-            'backHref' => '/admin/curriculo/documentos?tab=pastas',
+            'backHref' => $this->folderUrl($parentId),
             'options' => $this->buildFolderDestinationOptions($folderId),
         ]);
     }
@@ -192,22 +211,11 @@ class AdminResumeDocumentFolderController
             $options[] = [
                 'group' => 'Pastas',
                 'value' => 'folder:' . $folder['id'],
-                'label' => $folder['name'],
+                'label' => $this->folders->path((int) $folder['id']),
             ];
         }
 
         return $options;
-    }
-
-    private function resolveFolderId($raw): ?int
-    {
-        if ($raw === null || $raw === '') {
-            return null;
-        }
-
-        $id = (int) $raw;
-
-        return $this->folders->find($id) !== null ? $id : null;
     }
 
     private function folderUrl(?int $folderId): string

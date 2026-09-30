@@ -8,6 +8,14 @@ class ResumeDocumentFolderRepository
 {
     private $database;
 
+    /**
+     * Cache de all() dentro de uma unica requisicao: breadcrumb(),
+     * descendantIds() e wouldCreateCycle() chamam all() internamente, e
+     * telas como a de mover pasta acabavam repetindo a mesma consulta
+     * varias vezes na mesma pagina. Invalidado em toda escrita.
+     */
+    private $allCache;
+
     public function __construct(?Database $database = null)
     {
         $this->database = $database ?: new Database();
@@ -15,7 +23,27 @@ class ResumeDocumentFolderRepository
 
     public function all(): array
     {
-        return $this->database->fetchAll('SELECT * FROM resume_document_folders ORDER BY name');
+        if ($this->allCache === null) {
+            $this->allCache = $this->database->fetchAll('SELECT * FROM resume_document_folders ORDER BY name');
+        }
+
+        return $this->allCache;
+    }
+
+    /**
+     * Normaliza um valor cru (de query string ou POST) pra um id de pasta
+     * valido ou null — usado tanto pra "raiz" quanto pra "pasta invalida",
+     * que aqui sao tratados da mesma forma (cai pra raiz em silencio).
+     */
+    public function resolveId($raw): ?int
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $id = (int) $raw;
+
+        return $this->find($id) !== null ? $id : null;
     }
 
     public function find(int $id): ?array
@@ -46,6 +74,8 @@ class ResumeDocumentFolderRepository
             ['parent_id' => $parentId, 'name' => $name]
         );
 
+        $this->allCache = null;
+
         return (int) $pdo->lastInsertId();
     }
 
@@ -55,6 +85,8 @@ class ResumeDocumentFolderRepository
             'UPDATE resume_document_folders SET name = :name WHERE id = :id',
             ['name' => $name, 'id' => $id]
         );
+
+        $this->allCache = null;
     }
 
     public function move(int $id, ?int $newParentId): void
@@ -63,25 +95,45 @@ class ResumeDocumentFolderRepository
             'UPDATE resume_document_folders SET parent_id = :parent_id WHERE id = :id',
             ['parent_id' => $newParentId, 'id' => $id]
         );
+
+        $this->allCache = null;
     }
 
     public function delete(int $id): void
     {
         $this->database->execute('DELETE FROM resume_document_folders WHERE id = :id', ['id' => $id]);
+
+        $this->allCache = null;
     }
 
     public function breadcrumb(int $folderId): array
     {
         $byId = $this->indexById($this->all());
         $trail = [];
+        $visited = [];
         $currentId = $folderId;
 
-        while ($currentId !== null && isset($byId[$currentId])) {
+        // $visited so importa se os dados ja chegarem corrompidos (uma
+        // referencia circular so seria possivel via SQL direto, nunca por
+        // este repositorio) — sem ela, um ciclo faria isso rodar pra
+        // sempre em vez de simplesmente devolver uma trilha incompleta.
+        while ($currentId !== null && isset($byId[$currentId]) && !isset($visited[$currentId])) {
+            $visited[$currentId] = true;
             array_unshift($trail, $byId[$currentId]);
             $currentId = $byId[$currentId]['parent_id'] !== null ? (int) $byId[$currentId]['parent_id'] : null;
         }
 
         return $trail;
+    }
+
+    /**
+     * "Financeiro / 2026" — usado nos seletores de destino de "Mover", onde
+     * so o nome nao basta pra distinguir duas pastas homonimas em lugares
+     * diferentes da arvore (nomes repetidos entre irmas sao permitidos).
+     */
+    public function path(int $folderId): string
+    {
+        return implode(' / ', array_column($this->breadcrumb($folderId), 'name'));
     }
 
     public function descendantIds(int $folderId): array
@@ -120,12 +172,14 @@ class ResumeDocumentFolderRepository
 
         $byId = $this->indexById($this->all());
         $currentId = $newParentId;
+        $visited = [];
 
-        while ($currentId !== null && isset($byId[$currentId])) {
+        while ($currentId !== null && isset($byId[$currentId]) && !isset($visited[$currentId])) {
             if ($currentId === $folderId) {
                 return true;
             }
 
+            $visited[$currentId] = true;
             $currentId = $byId[$currentId]['parent_id'] !== null ? (int) $byId[$currentId]['parent_id'] : null;
         }
 

@@ -54,25 +54,44 @@ class ResumeExperienceDocumentRepository
 
     public function findManyByIds(array $ids): array
     {
+        [$placeholdersSql, $params] = $this->buildInClause($ids, 'id');
+
+        if ($placeholdersSql === null) {
+            return [];
+        }
+
+        return $this->database->fetchAll(
+            'SELECT * FROM resume_experience_documents WHERE id IN (' . $placeholdersSql . ') AND deleted_at IS NULL',
+            $params
+        );
+    }
+
+    /**
+     * Monta a lista de placeholders nomeados (":id0", ":id1", ...) e o array
+     * de parametros correspondente pra uma clausula IN (...) — reaproveitado
+     * por findManyByIds() e pathsByFolderIds(), que so diferem na tabela/
+     * coluna consultada.
+     *
+     * @return array{0: ?string, 1: array<string,int>}
+     */
+    private function buildInClause(array $ids, string $prefix): array
+    {
         $ids = array_values(array_unique(array_map('intval', $ids)));
 
         if (empty($ids)) {
-            return [];
+            return [null, []];
         }
 
         $placeholders = [];
         $params = [];
 
         foreach ($ids as $index => $id) {
-            $key = 'id' . $index;
+            $key = $prefix . $index;
             $placeholders[] = ':' . $key;
             $params[$key] = $id;
         }
 
-        return $this->database->fetchAll(
-            'SELECT * FROM resume_experience_documents WHERE id IN (' . implode(',', $placeholders) . ') AND deleted_at IS NULL',
-            $params
-        );
+        return [implode(',', $placeholders), $params];
     }
 
     public function create(array $data): int
@@ -134,23 +153,14 @@ class ResumeExperienceDocumentRepository
 
     public function pathsByFolderIds(array $folderIds): array
     {
-        $folderIds = array_values(array_unique(array_map('intval', $folderIds)));
+        [$placeholdersSql, $params] = $this->buildInClause($folderIds, 'folder');
 
-        if (empty($folderIds)) {
+        if ($placeholdersSql === null) {
             return [];
         }
 
-        $placeholders = [];
-        $params = [];
-
-        foreach ($folderIds as $index => $id) {
-            $key = 'folder' . $index;
-            $placeholders[] = ':' . $key;
-            $params[$key] = $id;
-        }
-
         $rows = $this->database->fetchAll(
-            'SELECT path FROM resume_experience_documents WHERE folder_id IN (' . implode(',', $placeholders) . ')',
+            'SELECT path FROM resume_experience_documents WHERE folder_id IN (' . $placeholdersSql . ')',
             $params
         );
 

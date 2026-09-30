@@ -7,6 +7,9 @@
             <?php endif; ?>
 
             <form method="post" action="<?= htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') ?>">
+                <?php if (isset($returnUrl)): ?>
+                    <input type="hidden" name="return" value="<?= htmlspecialchars($returnUrl, ENT_QUOTES, 'UTF-8') ?>">
+                <?php endif; ?>
                 <div class="mb-3">
                     <label class="form-label" for="destination">Novo local</label>
                     <select class="form-select" id="destination" name="destination" required>

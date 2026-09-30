@@ -53,5 +53,8 @@
     </div>
 <?php endif; ?>
 
-<?php $group = ['id' => $currentFolderId, 'documents' => $folderDocuments, 'selectable' => true, 'ownerType' => 'folder']; ?>
+<?php
+$folderTabReturnUrl = '/admin/curriculo/documentos?tab=pastas' . ($currentFolderId !== null ? '&folder_id=' . $currentFolderId : '');
+$group = ['id' => $currentFolderId, 'documents' => $folderDocuments, 'selectable' => true, 'ownerType' => 'folder', 'returnUrl' => $folderTabReturnUrl];
+?>
 <?php require __DIR__ . '/resume-document-panel.php'; ?>

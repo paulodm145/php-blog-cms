@@ -17,18 +17,19 @@ class AdminResumeDocumentController
 {
     private $documents;
     private $experience;
+    private $folders;
 
     public function __construct()
     {
         Auth::requireAdmin();
         $this->documents = new ResumeExperienceDocumentRepository();
         $this->experience = new ResumeExperienceRepository();
+        $this->folders = new ResumeDocumentFolderRepository();
     }
 
     public function index(): void
     {
-        $folders = new ResumeDocumentFolderRepository();
-        $currentFolderId = $this->resolveFolderId($_GET['folder_id'] ?? null, $folders);
+        $currentFolderId = $this->folders->resolveId($_GET['folder_id'] ?? null);
 
         View::render('admin/resume-documents', [
             'title' => 'Documentos | Admin paulorb.dev',
@@ -37,21 +38,10 @@ class AdminResumeDocumentController
             'shares' => (new ResumeDocumentShareRepository())->listAllForAdmin(),
             'appUrl' => rtrim((string) Env::get('APP_URL', ''), '/'),
             'currentFolderId' => $currentFolderId,
-            'folderBreadcrumb' => $currentFolderId !== null ? $folders->breadcrumb($currentFolderId) : [],
-            'folderChildren' => $folders->children($currentFolderId),
+            'folderBreadcrumb' => $currentFolderId !== null ? $this->folders->breadcrumb($currentFolderId) : [],
+            'folderChildren' => $this->folders->children($currentFolderId),
             'folderDocuments' => $this->documents->listByFolder($currentFolderId),
         ]);
-    }
-
-    private function resolveFolderId($raw, ResumeDocumentFolderRepository $folders): ?int
-    {
-        if ($raw === null || $raw === '') {
-            return null;
-        }
-
-        $id = (int) $raw;
-
-        return $folders->find($id) !== null ? $id : null;
     }
 
     public function upload(): void
@@ -105,7 +95,7 @@ class AdminResumeDocumentController
 
             $folderId = (int) $folderIdRaw;
 
-            if ((new ResumeDocumentFolderRepository())->find($folderId) === null) {
+            if ($this->folders->find($folderId) === null) {
                 return null;
             }
 
@@ -183,14 +173,36 @@ class AdminResumeDocumentController
             return;
         }
 
+        $returnUrl = $this->sanitizeReturnUrl($_GET['return'] ?? null);
+
         View::render('admin/resume-document-move-form', [
             'title' => 'Mover documento | Admin paulorb.dev',
             'user' => Auth::user(),
             'subjectLabel' => $document['original_name'],
             'formAction' => '/admin/curriculo/documentos/' . (int) $id . '/mover',
-            'backHref' => '/admin/curriculo/documentos',
+            'backHref' => $returnUrl,
+            'returnUrl' => $returnUrl,
             'options' => $this->buildDocumentDestinationOptions(),
         ]);
+    }
+
+    /**
+     * So aceita um caminho relativo comecando com uma unica barra
+     * (ex.: "/admin/curriculo/documentos?tab=pastas&folder_id=5") — nunca
+     * uma URL absoluta nem "//host/..." (protocol-relative), que um
+     * "return" adulterado poderia usar pra mandar o admin, depois de
+     * mover um documento, pra fora do proprio site.
+     */
+    private function sanitizeReturnUrl($raw): string
+    {
+        $default = '/admin/curriculo/documentos';
+        $value = (string) ($raw ?? '');
+
+        if ($value === '' || $value[0] !== '/' || (isset($value[1]) && $value[1] === '/')) {
+            return $default;
+        }
+
+        return $value;
     }
 
     public function move(string $id): void
@@ -224,7 +236,7 @@ class AdminResumeDocumentController
             } else {
                 $folderId = (int) $destinationIdRaw;
 
-                if ((new ResumeDocumentFolderRepository())->find($folderId) === null) {
+                if ($this->folders->find($folderId) === null) {
                     ErrorPage::notFound();
                     return;
                 }
@@ -266,7 +278,11 @@ class AdminResumeDocumentController
             return;
         }
 
-        header('Location: /admin/curriculo/documentos');
+        // Mesmo padrao de delete(): rmdir() recusa sozinho se a pasta de
+        // origem ainda tiver outros documentos, sem checagem extra antes.
+        @rmdir(dirname($oldAbsolutePath));
+
+        header('Location: ' . $this->sanitizeReturnUrl($_POST['return'] ?? null));
     }
 
     private function buildDocumentDestinationOptions(): array
@@ -283,11 +299,11 @@ class AdminResumeDocumentController
 
         $options[] = ['group' => 'Pastas', 'value' => 'folder:', 'label' => 'Raiz das pastas'];
 
-        foreach ((new ResumeDocumentFolderRepository())->all() as $folder) {
+        foreach ($this->folders->all() as $folder) {
             $options[] = [
                 'group' => 'Pastas',
                 'value' => 'folder:' . $folder['id'],
-                'label' => $folder['name'],
+                'label' => $this->folders->path((int) $folder['id']),
             ];
         }
 

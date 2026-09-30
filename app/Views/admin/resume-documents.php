@@ -40,6 +40,7 @@
                                 </h2>
                                 <div id="experience-<?= (int) $group['id'] ?>" class="accordion-collapse collapse<?= $index === 0 ? ' show' : '' ?>" data-bs-parent="#documents-accordion">
                                     <div class="accordion-body">
+                                        <?php $group['returnUrl'] = '/admin/curriculo/documentos?tab=documentos'; ?>
                                         <?php require __DIR__ . '/partials/resume-document-panel.php'; ?>
                                     </div>
                                 </div>

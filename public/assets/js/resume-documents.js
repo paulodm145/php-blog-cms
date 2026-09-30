@@ -107,7 +107,7 @@
             '</div>' +
             '<span class="text-secondary small flex-shrink-0">' + formatSize(item.size) + '</span>' +
             '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/download" title="Baixar"><i class="fa-solid fa-download"></i></a>' +
-            '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/mover" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>' +
+            '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/mover?return=' + encodeURIComponent(window.location.pathname + window.location.search) + '" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>' +
             '<button class="admin-action-link admin-action-danger flex-shrink-0" type="button" data-delete-document title="Excluir"><i class="fa-solid fa-trash"></i></button>';
         li.querySelector('.text-truncate').textContent = item.original_name;
 

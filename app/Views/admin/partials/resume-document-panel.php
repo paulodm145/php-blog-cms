@@ -6,6 +6,10 @@ $documents = $group['documents'];
 // (app/Views/admin/resume-experience-form.php) — la nao existe botao de
 // compartilhar, entao o checkbox de selecao nao tem pra que servir.
 $documentSelectable = $group['selectable'] ?? true;
+// Pra onde "Mover" volta depois — cada tela que inclui este painel passa
+// a sua propria URL (aba Documentos, uma pasta especifica, ou a pagina de
+// edicao da experiencia), senao cai pra raiz da tela de Documentos.
+$documentReturnUrl = $group['returnUrl'] ?? '/admin/curriculo/documentos';
 ?>
 <div class="document-manager"
      <?php if ($ownerType === 'folder'): ?>
