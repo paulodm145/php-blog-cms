@@ -13,14 +13,6 @@ try {
 $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $currentPath = $currentPath === '/' ? '/' : rtrim($currentPath, '/');
 
-$isActive = function (string $prefix) use ($currentPath): bool {
-    if ($prefix === '/admin') {
-        return $currentPath === '/admin';
-    }
-
-    return strpos($currentPath, $prefix) === 0;
-};
-
 $navItems = [
     ['href' => '/admin', 'icon' => 'fa-gauge', 'label' => 'Painel', 'prefix' => '/admin'],
     ['href' => '/admin/posts', 'icon' => 'fa-newspaper', 'label' => 'Posts', 'prefix' => '/admin/posts'],
@@ -35,6 +27,30 @@ $navItems = [
     ['href' => '/admin/users', 'icon' => 'fa-users', 'label' => 'Usuários', 'prefix' => '/admin/users'],
     ['href' => '/admin/settings', 'icon' => 'fa-gear', 'label' => 'Configurações', 'prefix' => '/admin/settings'],
 ];
+
+// Prefixo mais especifico vence: sem isso, visitar /admin/curriculo/documentos
+// tambem marcava "Curriculo" como ativo (seu prefixo /admin/curriculo bate
+// com qualquer sub-rota dele, inclusive a de outro item da lista).
+$isActive = function (string $prefix) use ($currentPath, $navItems): bool {
+    if ($prefix === '/admin') {
+        return $currentPath === '/admin';
+    }
+
+    if (strpos($currentPath, $prefix) !== 0) {
+        return false;
+    }
+
+    foreach ($navItems as $item) {
+        if ($item['prefix'] !== $prefix
+            && strlen($item['prefix']) > strlen($prefix)
+            && strpos($currentPath, $item['prefix']) === 0
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+};
 ?>
 <div class="offcanvas-lg offcanvas-start admin-sidebar" tabindex="-1" id="adminSidebar" aria-labelledby="adminSidebarLabel">
     <div class="offcanvas-header d-lg-none">
