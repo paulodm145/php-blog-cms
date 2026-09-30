@@ -204,6 +204,8 @@ $router->post('/admin/curriculo/documentos/pastas/{id}/mover', [AdminResumeDocum
 $router->get('/admin/curriculo/documentos/compartilhamentos', [AdminResumeDocumentShareController::class, 'index']);
 $router->post('/admin/curriculo/documentos/compartilhar', [AdminResumeDocumentShareController::class, 'store']);
 $router->post('/admin/curriculo/documentos/compartilhamentos/{id}/revogar', [AdminResumeDocumentShareController::class, 'revoke']);
+$router->get('/admin/curriculo/documentos/{id}/mover', [AdminResumeDocumentController::class, 'moveForm']);
+$router->post('/admin/curriculo/documentos/{id}/mover', [AdminResumeDocumentController::class, 'move']);
 $router->post('/admin/curriculo/documentos/{id}', [AdminResumeDocumentController::class, 'updateCaption']);
 $router->post('/admin/curriculo/documentos/{id}/delete', [AdminResumeDocumentController::class, 'delete']);
 $router->get('/admin/curriculo/documentos/{id}/download', [AdminResumeDocumentController::class, 'download']);
