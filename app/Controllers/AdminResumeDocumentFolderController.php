@@ -147,7 +147,24 @@ class AdminResumeDocumentFolderController
         }
 
         $parts = explode(':', (string) ($_POST['destination'] ?? ''), 2);
-        $newParentId = isset($parts[1]) && $parts[1] !== '' ? (int) $parts[1] : null;
+        $destinationType = $parts[0] ?? '';
+        $destinationIdRaw = $parts[1] ?? '';
+
+        if ($destinationType !== 'folder') {
+            ErrorPage::notFound();
+            return;
+        }
+
+        $newParentId = null;
+
+        if ($destinationIdRaw !== '') {
+            $newParentId = (int) $destinationIdRaw;
+
+            if ($this->folders->find($newParentId) === null) {
+                ErrorPage::notFound();
+                return;
+            }
+        }
 
         if ($this->folders->wouldCreateCycle($folderId, $newParentId)) {
             header(

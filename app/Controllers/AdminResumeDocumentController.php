@@ -251,7 +251,20 @@ class AdminResumeDocumentController
         }
 
         $newPath = '/storage/uploads/resume-documents/' . $directory . '/' . $document['file_name'];
-        $this->documents->move((int) $id, $experienceId, $folderId, $newPath);
+
+        try {
+            $this->documents->move((int) $id, $experienceId, $folderId, $newPath);
+        } catch (\Throwable $exception) {
+            // Desfaz o rename fisico: sem isso, uma falha aqui (ex.: o
+            // destino foi excluido entre o find() acima e este UPDATE)
+            // deixava o arquivo fisicamente movido mas o registro ainda
+            // apontando pro caminho antigo — download() e o link publico
+            // passavam a dar 404 pra sempre, sem nenhum jeito de recuperar
+            // pela propria aplicacao.
+            rename($newAbsolutePath, $oldAbsolutePath);
+            ErrorPage::serverError();
+            return;
+        }
 
         header('Location: /admin/curriculo/documentos');
     }

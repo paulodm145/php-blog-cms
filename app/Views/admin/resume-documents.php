@@ -20,7 +20,10 @@
 
             <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-3" id="documents-selection-bar">
                 <span class="text-secondary small"><span id="documents-selected-count">0</span> selecionado(s)</span>
-                <button class="btn btn-sm btn-primary" id="documents-share-trigger" type="button" disabled>Compartilhar selecionados</button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" id="documents-clear-selection" type="button">Limpar seleção</button>
+                    <button class="btn btn-sm btn-primary" id="documents-share-trigger" type="button" disabled>Compartilhar selecionados</button>
+                </div>
             </div>
 
             <div class="tab-content" id="documents-tabs-content">

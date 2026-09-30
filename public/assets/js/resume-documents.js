@@ -368,6 +368,18 @@
 
     function wireShareModal() {
         var trigger = document.getElementById('documents-share-trigger');
+        var clearButton = document.getElementById('documents-clear-selection');
+
+        if (clearButton) {
+            // Escape hatch pra sessionStorage ficar com IDs de documentos que
+            // sumiram (excluidos numa pasta ja recarregada, por exemplo):
+            // sem isso, o contador ficava preso num numero > 0 sem nenhum
+            // checkbox marcado pra desmarcar, e toda tentativa de compartilhar
+            // batia em "documentos invalidos" pro resto da aba do navegador.
+            clearButton.addEventListener('click', function () {
+                clearSelection();
+            });
+        }
 
         if (!trigger) { return; }
 
