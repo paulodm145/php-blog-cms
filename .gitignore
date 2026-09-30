@@ -9,7 +9,13 @@
 /.vscode/
 
 /.superpowers/
-/storage/
+# /storage/* (nao /storage/) pra dar pra reincluir um arquivo especifico
+# abaixo — git nao reinclui nada dentro de um diretorio inteiramente
+# ignorado, so dentro de um ignorado por wildcard.
+/storage/*
+# Excecao: protege documentos privados (storage/uploads/resume-documents/)
+# por si so, mesmo que a regra do .htaccess da raiz do projeto mude um dia.
+!/storage/.htaccess
 
 # Notas internas de planejamento (specs/plans) geradas durante o
 # desenvolvimento assistido — nao sao documentacao do projeto e citam

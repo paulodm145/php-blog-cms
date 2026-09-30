@@ -11,6 +11,12 @@ require dirname(__DIR__) . '/partials/site-top.php';
                 <h1 class="mb-3" style="font-size:1.9rem;font-weight:700">Este link expirou ou não existe.</h1>
                 <p class="text-muted mb-4">Peça um novo link a quem compartilhou estes documentos com você.</p>
             </div>
+        <?php elseif (empty($groups)): ?>
+            <div class="text-center">
+                <div class="accent mb-2" style="font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Sem documentos</div>
+                <h1 class="mb-3" style="font-size:1.9rem;font-weight:700">Este link não tem mais documentos disponíveis.</h1>
+                <p class="text-muted mb-4">Os documentos compartilhados aqui foram removidos. Peça um novo link a quem compartilhou com você.</p>
+            </div>
         <?php else: ?>
             <h1 class="h3 mb-4">Documentos compartilhados</h1>
             <?php foreach ($groups as $group): ?>

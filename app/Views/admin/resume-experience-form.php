@@ -44,6 +44,6 @@
             <?php endif; ?>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-<script src="/assets/js/resume-documents.js?v=<?= @filemtime(dirname(__DIR__, 2) . '/public/assets/js/resume-documents.js') ?: '1' ?>"></script>
+<script src="/assets/js/resume-documents.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/resume-documents.js') ?: '1' ?>"></script>
 </body>
 </html>

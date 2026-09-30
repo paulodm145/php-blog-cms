@@ -20,16 +20,25 @@ class PublicDocumentShareController
 
     public function show(string $token): void
     {
-        $groups = $this->shares->documentsGroupedForToken($token);
+        // Token invalido/expirado/revogado (valid=false) e token valido mas
+        // sem nenhum documento ainda vivo (valid=true, groups vazio — ex.:
+        // todos os documentos daquele link foram excluidos depois de
+        // compartilhados) sao estados diferentes: o primeiro e "esse link
+        // nao existe", o segundo e "esse link existe, so nao tem mais nada
+        // pra mostrar". Misturar os dois fazia o segundo caso mentir pro
+        // destinatario que o link tinha expirado.
+        $share = $this->shares->findValidByToken($token);
+        $groups = $share !== null ? $this->shares->documentsGroupedForToken($token) : [];
         $settings = (new SettingRepository())->all();
 
         View::render('site/document-share', [
             'title' => 'Documentos compartilhados | ' . ($settings['site_name'] ?? 'paulorb.dev'),
             'description' => 'Documentos compartilhados via paulorb.dev.',
             'robots' => 'noindex,nofollow',
+            'disableAnalytics' => true,
             'settings' => $settings,
             'groups' => $groups,
-            'valid' => !empty($groups),
+            'valid' => $share !== null,
             'token' => $token,
         ]);
     }

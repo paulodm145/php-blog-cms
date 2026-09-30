@@ -46,9 +46,15 @@ class ResumeDocumentShareRepository
 
     public function findValidByToken(string $token): ?array
     {
+        // Compara contra o relogio do PHP (o mesmo usado em store() pra
+        // gravar expires_at), nunca o NOW() do MySQL: os dois servidores
+        // podem rodar em fusos horarios diferentes (ex.: app com
+        // date.timezone=America/Sao_Paulo, banco em UTC), e comparar contra
+        // NOW() fazia links expirarem antes ou depois do prometido conforme
+        // essa diferenca.
         return $this->database->fetch(
-            'SELECT * FROM resume_document_shares WHERE token = :token AND revoked_at IS NULL AND expires_at > NOW() LIMIT 1',
-            ['token' => $token]
+            'SELECT * FROM resume_document_shares WHERE token = :token AND revoked_at IS NULL AND expires_at > :now LIMIT 1',
+            ['token' => $token, 'now' => date('Y-m-d H:i:s')]
         );
     }
 
@@ -103,10 +109,16 @@ class ResumeDocumentShareRepository
 
     public function listAllForAdmin(): array
     {
+        // Junta ate resume_experience_documents (nao so ate share_items) e
+        // filtra deleted_at IS NULL: sem isso, um documento excluido depois
+        // de compartilhado continuava contado aqui, mas documentsGroupedForToken()
+        // ja o esconde da pagina publica — a contagem batia com o que o
+        // link prometia, nao com o que ele realmente serve.
         return $this->database->fetchAll(
-            'SELECT s.*, COUNT(si.id) AS document_count
+            'SELECT s.*, COUNT(d.id) AS document_count
              FROM resume_document_shares s
              LEFT JOIN resume_document_share_items si ON si.share_id = s.id
+             LEFT JOIN resume_experience_documents d ON d.id = si.document_id AND d.deleted_at IS NULL
              GROUP BY s.id
              ORDER BY s.created_at DESC'
         );

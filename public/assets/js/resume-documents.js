@@ -138,11 +138,37 @@
         xhr.send(formData);
     }
 
+    // fetch() resolve normalmente pra qualquer status HTTP e segue redirect
+    // sem avisar — uma sessao expirada faz Auth::requireAdmin() redirecionar
+    // pra /admin/login, que responde 200 com HTML. Sem essa checagem, esse
+    // HTML de login vira uma "resposta de sucesso" e a UI mente pro usuario
+    // que a acao deu certo quando na verdade nada foi salvo/excluido no
+    // servidor. response.redirected cobre o caso do redirect; !response.ok
+    // cobre um erro HTTP direto (404/500); e so entao tenta interpretar o
+    // corpo como o JSON que os endpoints desta tela sempre devolvem.
+    function parseApiResponse(response) {
+        if (!response.ok || response.redirected) {
+            throw new Error('sessão expirada ou falha no servidor');
+        }
+
+        return response.json().then(function (payload) {
+            if (!payload || payload.ok !== true) {
+                throw new Error('resposta inesperada do servidor');
+            }
+
+            return payload;
+        });
+    }
+
     function saveCaption(documentId, caption) {
         var formData = new FormData();
         formData.append('caption', caption);
 
-        fetch('/admin/curriculo/documentos/' + documentId, { method: 'POST', body: formData });
+        fetch('/admin/curriculo/documentos/' + documentId, { method: 'POST', body: formData })
+            .then(parseApiResponse)
+            .catch(function () {
+                notifyError('Falha ao salvar a legenda', 'sua sessão pode ter expirado — recarregue a página');
+            });
     }
 
     function deleteDocument(manager, li) {
@@ -150,6 +176,7 @@
 
         function proceed() {
             fetch('/admin/curriculo/documentos/' + documentId + '/delete', { method: 'POST' })
+                .then(parseApiResponse)
                 .then(function () {
                     delete selectedIds[documentId];
                     updateSelectionBar();
@@ -158,7 +185,7 @@
                     notifySuccess('Documento excluído');
                 })
                 .catch(function () {
-                    notifyError('Falha ao excluir o documento');
+                    notifyError('Falha ao excluir o documento', 'sua sessão pode ter expirado — recarregue a página');
                 });
         }
 
