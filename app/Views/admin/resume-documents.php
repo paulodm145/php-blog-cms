@@ -26,6 +26,7 @@
                                 <h2 class="accordion-header">
                                     <button class="accordion-button<?= $index === 0 ? '' : ' collapsed' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#experience-<?= (int) $group['id'] ?>">
                                         <?= htmlspecialchars($group['role'], ENT_QUOTES, 'UTF-8') ?> — <?= htmlspecialchars($group['company'], ENT_QUOTES, 'UTF-8') ?>
+                                        <span class="text-secondary small ms-2"><?= htmlspecialchars($group['period'], ENT_QUOTES, 'UTF-8') ?></span>
                                         <span class="badge text-bg-secondary ms-2"><?= count($group['documents']) ?></span>
                                     </button>
                                 </h2>

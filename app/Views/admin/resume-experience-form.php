@@ -39,7 +39,7 @@
             <?php if (!$isNew): ?>
                 <hr class="my-4">
                 <h2 class="h5 mb-3">Documentos desta experiência</h2>
-                <?php $group = ['id' => $item['id'], 'documents' => $documents]; ?>
+                <?php $group = ['id' => $item['id'], 'documents' => $documents, 'selectable' => false]; ?>
                 <?php require __DIR__ . '/partials/resume-document-panel.php'; ?>
             <?php endif; ?>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>

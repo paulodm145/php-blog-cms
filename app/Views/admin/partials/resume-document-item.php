@@ -1,5 +1,7 @@
 <?php
 /** @var array $document */
+/** @var bool $documentSelectable */
+$documentSelectable = $documentSelectable ?? true;
 $documentIconClass = strpos($document['mime_type'], 'image/') === 0
     ? 'fa-file-image'
     : \App\Core\Html::fileIcon($document['mime_type']);
@@ -8,7 +10,9 @@ $documentSizeLabel = ((int) $document['size']) >= 1048576
     : (((int) $document['size']) >= 1024 ? round(((int) $document['size']) / 1024, 1) . ' KB' : (int) $document['size'] . ' B');
 ?>
 <li class="list-group-item d-flex align-items-center gap-2" data-document-id="<?= (int) $document['id'] ?>">
-    <input class="form-check-input flex-shrink-0" type="checkbox" data-document-checkbox>
+    <?php if ($documentSelectable): ?>
+        <input class="form-check-input flex-shrink-0" type="checkbox" data-document-checkbox>
+    <?php endif; ?>
     <i class="fa-solid <?= $documentIconClass ?> flex-shrink-0"></i>
     <div class="flex-grow-1 min-w-0">
         <div class="text-truncate"><?= htmlspecialchars($document['original_name'], ENT_QUOTES, 'UTF-8') ?></div>

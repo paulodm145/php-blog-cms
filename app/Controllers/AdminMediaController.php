@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\ImageThumbnail;
+use App\Core\UploadValidator;
 use App\Core\View;
 use App\Repositories\MediaRepository;
 
@@ -67,7 +68,7 @@ class AdminMediaController
     {
         header('Content-Type: application/json');
 
-        $files = $this->normalizeUploadedFiles($_FILES['files'] ?? null);
+        $files = UploadValidator::normalizeUploadedFiles($_FILES['files'] ?? null);
         $items = [];
         $errors = [];
 
@@ -133,40 +134,6 @@ class AdminMediaController
         echo json_encode(['ok' => true]);
     }
 
-    /**
-     * $_FILES['files'] chega no formato "invertido" do PHP pra inputs com
-     * `multiple` (name/tmp_name/error/size viram arrays paralelos). Aqui
-     * viram uma lista de arrays normais, um por arquivo.
-     */
-    private function normalizeUploadedFiles($filesField): array
-    {
-        if (!is_array($filesField) || !isset($filesField['name'])) {
-            return [];
-        }
-
-        if (!is_array($filesField['name'])) {
-            return [$filesField];
-        }
-
-        $normalized = [];
-
-        foreach ($filesField['name'] as $index => $name) {
-            if (($filesField['error'][$index] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-                continue;
-            }
-
-            $normalized[] = [
-                'name' => $name,
-                'type' => $filesField['type'][$index] ?? '',
-                'tmp_name' => $filesField['tmp_name'][$index] ?? '',
-                'error' => $filesField['error'][$index] ?? UPLOAD_ERR_NO_FILE,
-                'size' => $filesField['size'][$index] ?? 0,
-            ];
-        }
-
-        return $normalized;
-    }
-
     private function storeUploadedFile(array $file): array
     {
         if ((int) $file['error'] !== UPLOAD_ERR_OK) {
@@ -174,7 +141,7 @@ class AdminMediaController
         }
 
         $mimeType = (string) mime_content_type((string) $file['tmp_name']);
-        $classification = \App\Core\UploadValidator::classify($mimeType, (string) $file['name'], (int) $file['size']);
+        $classification = UploadValidator::classify($mimeType, (string) $file['name'], (int) $file['size']);
         $kind = $classification['kind'];
         $extension = $classification['extension'];
 
@@ -186,7 +153,7 @@ class AdminMediaController
             mkdir($uploadDir, 0755, true);
         }
 
-        $fileName = \App\Core\UploadValidator::generateFileName((string) $file['name'], $extension);
+        $fileName = UploadValidator::generateFileName((string) $file['name'], $extension);
 
         if (!move_uploaded_file((string) $file['tmp_name'], $uploadDir . '/' . $fileName)) {
             throw new \RuntimeException('Não foi possível salvar o arquivo');

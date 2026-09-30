@@ -74,6 +74,10 @@ class AdminResumeExperienceController
             }
         }
 
+        // rmdir() recusa sozinho se, por algum motivo, ainda sobrar algo
+        // ali dentro — sem checagem extra de "esta vazia?" antes.
+        @rmdir(dirname(__DIR__, 2) . '/storage/uploads/resume-documents/' . $experienceId);
+
         header('Location: /admin/curriculo?saved=1#tab-experiencia');
     }
 

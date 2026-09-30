@@ -41,6 +41,19 @@
         return 'fa-file';
     }
 
+    function clearSelection() {
+        selectedIds = {};
+
+        var checked = document.querySelectorAll('[data-document-checkbox]:checked');
+        var i;
+
+        for (i = 0; i < checked.length; i++) {
+            checked[i].checked = false;
+        }
+
+        updateSelectionBar();
+    }
+
     function updateSelectionBar() {
         var countEl = document.getElementById('documents-selected-count');
         var button = document.getElementById('documents-share-trigger');
@@ -50,12 +63,12 @@
         if (button) { button.disabled = count === 0; }
     }
 
-    function buildDocumentItem(item) {
+    function buildDocumentItem(item, selectable) {
         var li = document.createElement('li');
         li.className = 'list-group-item d-flex align-items-center gap-2';
         li.setAttribute('data-document-id', item.id);
         li.innerHTML =
-            '<input class="form-check-input flex-shrink-0" type="checkbox" data-document-checkbox>' +
+            (selectable ? '<input class="form-check-input flex-shrink-0" type="checkbox" data-document-checkbox>' : '') +
             '<i class="fa-solid ' + fileIconClass(item.mime_type) + ' flex-shrink-0"></i>' +
             '<div class="flex-grow-1 min-w-0">' +
                 '<div class="text-truncate"></div>' +
@@ -69,6 +82,15 @@
         return li;
     }
 
+    function refreshEmptyState(manager) {
+        var list = manager.querySelector('[data-document-list]');
+        var emptyMessage = manager.querySelector('.document-empty-message');
+
+        if (!list || !emptyMessage) { return; }
+
+        emptyMessage.classList.toggle('d-none', list.children.length > 0);
+    }
+
     function bumpBadge(manager, delta) {
         var accordionItem = manager.closest('.accordion-item');
         if (!accordionItem) { return; }
@@ -79,6 +101,7 @@
 
     function uploadFiles(manager, fileList) {
         var experienceId = manager.getAttribute('data-experience-id');
+        var selectable = manager.getAttribute('data-selectable') !== 'false';
         var progressWrap = manager.querySelector('[data-upload-progress-wrap]');
         var progressBar = manager.querySelector('[data-upload-progress-bar]');
         var list = manager.querySelector('[data-document-list]');
@@ -122,7 +145,7 @@
             if (payload.items && payload.items.length) {
                 if (emptyMessage) { emptyMessage.classList.add('d-none'); }
                 payload.items.forEach(function (item) {
-                    if (list) { list.appendChild(buildDocumentItem(item)); }
+                    if (list) { list.appendChild(buildDocumentItem(item, selectable)); }
                 });
                 bumpBadge(manager, payload.items.length);
                 notifySuccess(payload.items.length === 1 ? 'Documento enviado' : payload.items.length + ' documentos enviados');
@@ -182,6 +205,7 @@
                     updateSelectionBar();
                     li.remove();
                     bumpBadge(manager, -1);
+                    refreshEmptyState(manager);
                     notifySuccess('Documento excluído');
                 })
                 .catch(function () {
@@ -277,6 +301,17 @@
         }
     }
 
+    function formatDateTime(value) {
+        // value vem do servidor como "Y-m-d H:i:s" — parse manual (nao
+        // `new Date(value)`) pra nao depender de como cada engine de
+        // browser interpreta uma string sem fuso explicito.
+        var match = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(value || '');
+
+        if (!match) { return value; }
+
+        return match[3] + '/' + match[2] + '/' + match[1] + ' ' + match[4] + ':' + match[5];
+    }
+
     function computeExpiresAt() {
         var preset = document.getElementById('share-expires-preset');
         var custom = document.getElementById('share-expires-custom');
@@ -346,9 +381,14 @@
                         }
 
                         if (resultUrl) { resultUrl.value = payload.url; }
-                        if (resultExpiry) { resultExpiry.textContent = payload.expires_at; }
+                        if (resultExpiry) { resultExpiry.textContent = formatDateTime(payload.expires_at); }
                         if (form) { form.classList.add('d-none'); }
                         if (result) { result.classList.remove('d-none'); }
+                        // Limpa a selecao: sem isso, um segundo clique em
+                        // "Compartilhar" (sem querer, ou achando que o
+                        // primeiro link nao tinha saido) gerava um SEGUNDO
+                        // link ativo sobre os mesmos documentos.
+                        clearSelection();
 
                         if (sharesWrap) {
                             fetch('/admin/curriculo/documentos/compartilhamentos')

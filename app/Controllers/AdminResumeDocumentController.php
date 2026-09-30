@@ -90,6 +90,10 @@ class AdminResumeDocumentController
 
             if (is_file($absolutePath)) {
                 unlink($absolutePath);
+                // rmdir() recusa sozinho se a pasta ainda tiver outros
+                // documentos daquela experiencia — sem checagem extra de
+                // "esta vazia?" antes.
+                @rmdir(dirname($absolutePath));
             }
 
             $this->documents->softDelete((int) $id);

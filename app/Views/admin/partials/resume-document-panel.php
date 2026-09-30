@@ -2,8 +2,12 @@
 /** @var array $group */
 $experienceId = (int) $group['id'];
 $documents = $group['documents'];
+// Falso quando o painel esta embutido na edicao de uma unica experiencia
+// (app/Views/admin/resume-experience-form.php) — la nao existe botao de
+// compartilhar, entao o checkbox de selecao nao tem pra que servir.
+$documentSelectable = $group['selectable'] ?? true;
 ?>
-<div class="document-manager" data-experience-id="<?= $experienceId ?>">
+<div class="document-manager" data-experience-id="<?= $experienceId ?>" data-selectable="<?= $documentSelectable ? 'true' : 'false' ?>">
     <div class="document-dropzone border border-dashed rounded p-3 text-center text-secondary mb-3" data-dropzone>
         Arraste arquivos aqui ou <button class="btn btn-link p-0 align-baseline" type="button" data-upload-trigger>selecione</button>
         <input type="file" class="d-none" multiple data-upload-input accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv">
