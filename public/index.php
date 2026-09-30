@@ -15,6 +15,7 @@ use App\Controllers\AdminResumeCertificationController;
 use App\Controllers\AdminResumeController;
 use App\Controllers\AdminResumeCourseController;
 use App\Controllers\AdminResumeDocumentController;
+use App\Controllers\AdminResumeDocumentShareController;
 use App\Controllers\AdminResumeEducationController;
 use App\Controllers\AdminResumeExperienceController;
 use App\Controllers\AdminSettingController;
@@ -189,6 +190,9 @@ $router->post('/admin/curriculo/experiencia/{id}/mover-cima', [AdminResumeExperi
 $router->post('/admin/curriculo/experiencia/{id}/mover-baixo', [AdminResumeExperienceController::class, 'moveDown']);
 $router->get('/admin/curriculo/documentos', [AdminResumeDocumentController::class, 'index']);
 $router->post('/admin/curriculo/documentos/upload', [AdminResumeDocumentController::class, 'upload']);
+$router->get('/admin/curriculo/documentos/compartilhamentos', [AdminResumeDocumentShareController::class, 'index']);
+$router->post('/admin/curriculo/documentos/compartilhar', [AdminResumeDocumentShareController::class, 'store']);
+$router->post('/admin/curriculo/documentos/compartilhamentos/{id}/revogar', [AdminResumeDocumentShareController::class, 'revoke']);
 $router->post('/admin/curriculo/documentos/{id}', [AdminResumeDocumentController::class, 'updateCaption']);
 $router->post('/admin/curriculo/documentos/{id}/delete', [AdminResumeDocumentController::class, 'delete']);
 $router->get('/admin/curriculo/documentos/{id}/download', [AdminResumeDocumentController::class, 'download']);

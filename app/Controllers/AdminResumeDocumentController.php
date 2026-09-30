@@ -3,10 +3,12 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Env;
 use App\Core\ErrorPage;
 use App\Core\FileDownload;
 use App\Core\UploadValidator;
 use App\Core\View;
+use App\Repositories\ResumeDocumentShareRepository;
 use App\Repositories\ResumeExperienceDocumentRepository;
 use App\Repositories\ResumeExperienceRepository;
 
@@ -28,6 +30,8 @@ class AdminResumeDocumentController
             'title' => 'Documentos | Admin paulorb.dev',
             'user' => Auth::user(),
             'groups' => $this->documents->allGroupedByExperience(),
+            'shares' => (new ResumeDocumentShareRepository())->listAllForAdmin(),
+            'appUrl' => rtrim((string) Env::get('APP_URL', ''), '/'),
         ]);
     }
 
