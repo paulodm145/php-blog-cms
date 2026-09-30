@@ -61,7 +61,19 @@ class AdminResumeExperienceController
 
     public function delete(string $id): void
     {
-        $this->experience->delete((int) $id);
+        $experienceId = (int) $id;
+        $documentPaths = (new ResumeExperienceDocumentRepository())->pathsByExperience($experienceId);
+
+        $this->experience->delete($experienceId);
+
+        foreach ($documentPaths as $path) {
+            $absolutePath = dirname(__DIR__, 2) . $path;
+
+            if (is_file($absolutePath)) {
+                unlink($absolutePath);
+            }
+        }
+
         header('Location: /admin/curriculo?saved=1#tab-experiencia');
     }
 
