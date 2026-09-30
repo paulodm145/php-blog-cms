@@ -1,7 +1,26 @@
 (function () {
     'use strict';
 
-    var selectedIds = {};
+    var SELECTION_STORAGE_KEY = 'resumeDocumentsSelection';
+
+    function loadSelection() {
+        try {
+            var raw = window.sessionStorage.getItem(SELECTION_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function saveSelection() {
+        try {
+            window.sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(selectedIds));
+        } catch (error) {
+            // sessionStorage indisponivel (ex.: modo privado) — segue so em memoria pro resto da sessao de navegacao
+        }
+    }
+
+    var selectedIds = loadSelection();
 
     function notifySuccess(title) {
         if (window.Swal) {
@@ -43,6 +62,7 @@
 
     function clearSelection() {
         selectedIds = {};
+        saveSelection();
 
         var checked = document.querySelectorAll('[data-document-checkbox]:checked');
         var i;
@@ -52,6 +72,17 @@
         }
 
         updateSelectionBar();
+    }
+
+    function syncCheckboxes(manager) {
+        var checkboxes = manager.querySelectorAll('[data-document-checkbox]');
+        var i, li, documentId;
+
+        for (i = 0; i < checkboxes.length; i++) {
+            li = checkboxes[i].closest('[data-document-id]');
+            documentId = li.getAttribute('data-document-id');
+            checkboxes[i].checked = !!selectedIds[documentId];
+        }
     }
 
     function updateSelectionBar() {
@@ -76,6 +107,7 @@
             '</div>' +
             '<span class="text-secondary small flex-shrink-0">' + formatSize(item.size) + '</span>' +
             '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/download" title="Baixar"><i class="fa-solid fa-download"></i></a>' +
+            '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/mover" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>' +
             '<button class="admin-action-link admin-action-danger flex-shrink-0" type="button" data-delete-document title="Excluir"><i class="fa-solid fa-trash"></i></button>';
         li.querySelector('.text-truncate').textContent = item.original_name;
 
@@ -100,7 +132,6 @@
     }
 
     function uploadFiles(manager, fileList) {
-        var experienceId = manager.getAttribute('data-experience-id');
         var selectable = manager.getAttribute('data-selectable') !== 'false';
         var progressWrap = manager.querySelector('[data-upload-progress-wrap]');
         var progressBar = manager.querySelector('[data-upload-progress-bar]');
@@ -109,7 +140,12 @@
         var formData = new FormData();
         var i;
 
-        formData.append('experience_id', experienceId);
+        if (manager.hasAttribute('data-folder-id')) {
+            formData.append('folder_id', manager.getAttribute('data-folder-id'));
+        } else {
+            formData.append('experience_id', manager.getAttribute('data-experience-id'));
+        }
+
         for (i = 0; i < fileList.length; i++) {
             formData.append('files[]', fileList[i]);
         }
@@ -202,6 +238,7 @@
                 .then(parseApiResponse)
                 .then(function () {
                     delete selectedIds[documentId];
+                    saveSelection();
                     updateSelectionBar();
                     li.remove();
                     bumpBadge(manager, -1);
@@ -279,6 +316,7 @@
                     delete selectedIds[documentId];
                 }
 
+                saveSelection();
                 updateSelectionBar();
             });
 
@@ -425,8 +463,10 @@
 
         for (i = 0; i < managers.length; i++) {
             wireManager(managers[i]);
+            syncCheckboxes(managers[i]);
         }
 
+        updateSelectionBar();
         wireShareModal();
     });
 }());
