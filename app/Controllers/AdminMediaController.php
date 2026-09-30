@@ -9,35 +9,6 @@ use App\Repositories\MediaRepository;
 
 class AdminMediaController
 {
-    private const IMAGE_MIMES = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-        'image/gif' => 'gif',
-    ];
-
-    private const FILE_MIMES = [
-        'application/pdf' => 'pdf',
-        'application/msword' => 'doc',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
-        'application/vnd.ms-excel' => 'xls',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
-        'application/vnd.ms-powerpoint' => 'ppt',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
-        'application/zip' => 'zip',
-        'text/plain' => 'txt',
-        // Aliases de CSV: o mime real detectado varia por sistema/versao
-        // do libmagic (a maioria bate como text/plain, mas alguns
-        // ambientes reportam um desses).
-        'application/csv' => 'csv',
-        'text/x-csv' => 'csv',
-        'text/csv' => 'csv',
-    ];
-
-    private const IMAGE_MAX_SIZE = 5242880;
-
-    private const FILE_MAX_SIZE = 15728640;
-
     private $media;
 
     public function __construct()
@@ -203,38 +174,9 @@ class AdminMediaController
         }
 
         $mimeType = (string) mime_content_type((string) $file['tmp_name']);
-        $kind = null;
-        $extension = null;
-
-        if (isset(self::IMAGE_MIMES[$mimeType])) {
-            $kind = 'image';
-            $extension = self::IMAGE_MIMES[$mimeType];
-
-            if ((int) $file['size'] > self::IMAGE_MAX_SIZE) {
-                throw new \RuntimeException('Imagem maior que 5 MB');
-            }
-        } elseif (isset(self::FILE_MIMES[$mimeType])) {
-            $kind = 'file';
-            $extension = self::FILE_MIMES[$mimeType];
-
-            // mime_content_type() nao distingue .txt de .csv (a imensa
-            // maioria dos CSVs reais bate como text/plain nessa deteccao
-            // por magic bytes) — se o arquivo original terminava em .csv,
-            // preserva essa extensao em vez de forcar .txt.
-            if ($mimeType === 'text/plain') {
-                $originalExtension = strtolower((string) pathinfo((string) $file['name'], PATHINFO_EXTENSION));
-
-                if ($originalExtension === 'csv') {
-                    $extension = 'csv';
-                }
-            }
-
-            if ((int) $file['size'] > self::FILE_MAX_SIZE) {
-                throw new \RuntimeException('Arquivo maior que 15 MB');
-            }
-        } else {
-            throw new \RuntimeException('Tipo de arquivo não suportado');
-        }
+        $classification = \App\Core\UploadValidator::classify($mimeType, (string) $file['name'], (int) $file['size']);
+        $kind = $classification['kind'];
+        $extension = $classification['extension'];
 
         $year = date('Y');
         $month = date('m');
@@ -244,8 +186,7 @@ class AdminMediaController
             mkdir($uploadDir, 0755, true);
         }
 
-        $baseName = $this->slugify(pathinfo((string) $file['name'], PATHINFO_FILENAME));
-        $fileName = $baseName . '-' . bin2hex(random_bytes(3)) . '.' . $extension;
+        $fileName = \App\Core\UploadValidator::generateFileName((string) $file['name'], $extension);
 
         if (!move_uploaded_file((string) $file['tmp_name'], $uploadDir . '/' . $fileName)) {
             throw new \RuntimeException('Não foi possível salvar o arquivo');
@@ -320,15 +261,5 @@ class AdminMediaController
     private function normalizeView(string $view): string
     {
         return in_array($view, ['list', 'grouped'], true) ? $view : 'grid';
-    }
-
-    private function slugify(string $value): string
-    {
-        $value = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
-        $value = strtolower((string) $value);
-        $value = preg_replace('/[^a-z0-9]+/', '-', $value);
-        $value = trim((string) $value, '-');
-
-        return $value !== '' ? $value : 'arquivo';
     }
 }
