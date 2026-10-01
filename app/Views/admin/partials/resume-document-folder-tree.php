@@ -72,9 +72,8 @@ $renderFolderTreeLevel = function (array $nodes) use (&$renderFolderTreeLevel, &
     .folder-tree-chevron { transition: transform .15s ease; }
     .folder-tree-toggle[aria-expanded="true"] .folder-tree-chevron { transform: rotate(90deg); }
     .folder-tree-row.folder-drop-target-active { background-color: rgba(13, 110, 253, .15); border-radius: 4px; }
-    #folder-tree-context-menu { z-index: 1050; min-width: 10rem; }
 </style>
-<nav aria-label="Árvore de pastas" data-folder-tree>
+<nav aria-label="Árvore de pastas">
     <div class="d-flex align-items-center folder-tree-row" data-drop-folder-id="">
         <span class="folder-tree-spacer"></span>
         <a
@@ -89,8 +88,3 @@ $renderFolderTreeLevel = function (array $nodes) use (&$renderFolderTreeLevel, &
         <p class="text-secondary small mt-2 mb-0">Nenhuma pasta criada ainda.</p>
     <?php endif; ?>
 </nav>
-<div id="folder-tree-context-menu" class="dropdown-menu d-none" style="position: fixed;">
-    <button class="dropdown-item" type="button" data-context-new-folder>
-        <i class="fa-solid fa-folder-plus me-1"></i> Nova pasta aqui
-    </button>
-</div>

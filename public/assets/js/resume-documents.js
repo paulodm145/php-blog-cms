@@ -662,19 +662,24 @@
     }
 
     function wireFolderTreeContextMenu() {
-        var tree = document.querySelector('[data-folder-tree]');
+        // Escuta no painel inteiro (o container com padding do offcanvas),
+        // nao so no <nav> da arvore em si — senao botao direito no espaco
+        // vazio abaixo da lista (o caso mais comum pra criar pasta na
+        // raiz) caia fora da area coberta e abria o menu nativo do
+        // navegador em vez do nosso.
+        var panel = document.querySelector('[data-folder-tree-panel]');
         var menu = document.getElementById('folder-tree-context-menu');
 
-        if (!tree || !menu) { return; }
+        if (!panel || !menu) { return; }
 
         var targetFolderId = '';
         var newFolderButton = menu.querySelector('[data-context-new-folder]');
 
         function hideMenu() {
-            menu.classList.add('d-none');
+            menu.classList.remove('show');
         }
 
-        tree.addEventListener('contextmenu', function (event) {
+        panel.addEventListener('contextmenu', function (event) {
             event.preventDefault();
 
             var row = event.target.closest ? event.target.closest('[data-drop-folder-id]') : null;
@@ -682,7 +687,10 @@
 
             menu.style.left = event.clientX + 'px';
             menu.style.top = event.clientY + 'px';
-            menu.classList.remove('d-none');
+            // ".dropdown-menu" do Bootstrap ja vem com display:none por
+            // padrao — so a classe "show" (nao bastava so tirar "d-none")
+            // bate a especificidade e faz ele aparecer de verdade.
+            menu.classList.add('show');
         });
 
         document.addEventListener('click', hideMenu);

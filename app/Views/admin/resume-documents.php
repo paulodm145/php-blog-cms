@@ -69,7 +69,7 @@
                                     <h5 class="offcanvas-title">Pastas</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
                                 </div>
-                                <div class="offcanvas-body border rounded p-3">
+                                <div class="offcanvas-body border rounded p-3" data-folder-tree-panel style="min-height: 8rem;">
                                     <?php require __DIR__ . '/partials/resume-document-folder-tree.php'; ?>
                                 </div>
                             </div>
@@ -117,6 +117,12 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div id="folder-tree-context-menu" class="dropdown-menu" style="position: fixed; z-index: 1060; min-width: 10rem;">
+                <button class="dropdown-item" type="button" data-context-new-folder>
+                    <i class="fa-solid fa-folder-plus me-1"></i> Nova pasta aqui
+                </button>
             </div>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
