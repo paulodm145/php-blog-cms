@@ -38,16 +38,16 @@
         <?php foreach ($folderChildren as $child): ?>
             <div class="col">
                 <div class="border rounded p-2 d-flex align-items-center justify-content-between" draggable="true" data-draggable-folder-id="<?= (int) $child['id'] ?>">
-                    <a class="text-decoration-none flex-grow-1 min-w-0" href="/admin/curriculo/documentos?tab=pastas&folder_id=<?= (int) $child['id'] ?>">
+                    <a class="text-decoration-none flex-grow-1 min-w-0" href="/admin/curriculo/documentos?tab=pastas&folder_id=<?= (int) $child['id'] ?>" data-folder-link>
                         <i class="fa-solid fa-folder me-2"></i>
-                        <?= htmlspecialchars($child['name'], ENT_QUOTES, 'UTF-8') ?>
+                        <span data-folder-name-text><?= htmlspecialchars($child['name'], ENT_QUOTES, 'UTF-8') ?></span>
                         <span class="text-secondary small">(<?= (int) $child['document_count'] ?>)</span>
                     </a>
                     <div class="admin-actions flex-shrink-0">
-                        <a class="admin-action-link" href="/admin/curriculo/documentos/pastas/<?= (int) $child['id'] ?>/renomear" title="Renomear"><i class="fa-solid fa-pen"></i></a>
+                        <button class="admin-action-link" type="button" data-rename-folder title="Renomear"><i class="fa-solid fa-pen"></i></button>
                         <a class="admin-action-link" href="/admin/curriculo/documentos/pastas/<?= (int) $child['id'] ?>/mover" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>
-                        <form class="d-inline" method="post" action="/admin/curriculo/documentos/pastas/<?= (int) $child['id'] ?>/excluir" onsubmit="return confirm('Excluir esta pasta e tudo dentro dela?');">
-                            <button class="admin-action-link admin-action-danger" type="submit"><i class="fa-solid fa-trash"></i></button>
+                        <form class="d-inline" method="post" action="/admin/curriculo/documentos/pastas/<?= (int) $child['id'] ?>/excluir">
+                            <button class="admin-action-link admin-action-danger" type="button" data-delete-folder title="Excluir"><i class="fa-solid fa-trash"></i></button>
                         </form>
                     </div>
                 </div>

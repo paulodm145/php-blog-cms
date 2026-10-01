@@ -625,6 +625,131 @@
             });
     }
 
+    function renameFolderViaFetch(folderId, name) {
+        var formData = new FormData();
+        formData.append('name', name);
+
+        return fetch('/admin/curriculo/documentos/pastas/' + folderId + '/renomear', { method: 'POST', body: formData })
+            .then(function (response) {
+                // Mesmo truque do moveFolderViaDrag: o endpoint so responde
+                // com redirect, entao um "erro=" na URL final (apos o fetch
+                // seguir o redirect sozinho) e a unica forma de saber que a
+                // validacao falhou sem mudar o backend.
+                var match = /[?&]erro=([^&]*)/.exec(response.url);
+
+                if (match) {
+                    throw new Error(decodeURIComponent(match[1].replace(/\+/g, ' ')));
+                }
+            });
+    }
+
+    /**
+     * Troca o nome exibido (dentro de [data-folder-link]) por um <input>
+     * editavel no proprio lugar, sem navegar pra pagina de renomear. O link
+     * so fica escondido (d-none), nunca removido, pra nao perder nenhum
+     * outro estado do card/linha enquanto edita.
+     */
+    function startInlineRename(folderId, container) {
+        var link = container.querySelector('[data-folder-link]');
+        var nameEl = container.querySelector('[data-folder-name-text]');
+
+        if (!link || !nameEl) { return; }
+
+        var currentName = nameEl.textContent.trim();
+        var settled = false;
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm d-inline-block';
+        input.style.width = 'auto';
+        input.value = currentName;
+
+        link.classList.add('d-none');
+        link.insertAdjacentElement('afterend', input);
+        input.focus();
+        input.select();
+
+        function cleanup() {
+            input.remove();
+            link.classList.remove('d-none');
+        }
+
+        function finish() {
+            if (settled) { return; }
+            settled = true;
+
+            var newName = input.value.trim();
+
+            if (newName === '' || newName === currentName) {
+                cleanup();
+                return;
+            }
+
+            renameFolderViaFetch(folderId, newName)
+                .then(function () {
+                    nameEl.textContent = newName;
+                    cleanup();
+                    notifySuccess('Pasta renomeada');
+                })
+                .catch(function (error) {
+                    notifyError('Falha ao renomear a pasta', error.message);
+                    cleanup();
+                });
+        }
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') { event.preventDefault(); finish(); }
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                settled = true;
+                cleanup();
+            }
+        });
+        input.addEventListener('blur', finish);
+    }
+
+    function confirmDeleteFolder(onConfirmed) {
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning', title: 'Excluir esta pasta e tudo dentro dela?', showCancelButton: true,
+                confirmButtonText: 'Excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#b42318'
+            }).then(function (result) {
+                if (result.isConfirmed) { onConfirmed(); }
+            });
+            return;
+        }
+
+        if (confirm('Excluir esta pasta e tudo dentro dela?')) { onConfirmed(); }
+    }
+
+    function wireFolderCardActions() {
+        var cards = document.querySelectorAll('[data-draggable-folder-id]');
+        var i;
+
+        for (i = 0; i < cards.length; i++) {
+            (function (card) {
+                var folderId = card.getAttribute('data-draggable-folder-id');
+                var renameButton = card.querySelector('[data-rename-folder]');
+                var deleteButton = card.querySelector('[data-delete-folder]');
+
+                if (renameButton) {
+                    renameButton.addEventListener('click', function () {
+                        startInlineRename(folderId, card);
+                    });
+                }
+
+                if (deleteButton) {
+                    deleteButton.addEventListener('click', function () {
+                        confirmDeleteFolder(function () {
+                            deleteButton.closest('form').submit();
+                        });
+                    });
+                }
+            }(cards[i]));
+        }
+    }
+
     function wireFolderDragAndDrop() {
         var cards = document.querySelectorAll('[data-draggable-folder-id]');
         var dropTargets = document.querySelectorAll('[data-drop-folder-id]');
@@ -673,6 +798,7 @@
         if (!panel || !menu) { return; }
 
         var targetFolderId = '';
+        var targetRow = null;
         var newFolderButton = menu.querySelector('[data-context-new-folder]');
         var renameFolderButton = menu.querySelector('[data-context-rename-folder]');
         var deleteFolderButton = menu.querySelector('[data-context-delete-folder]');
@@ -686,6 +812,7 @@
             event.preventDefault();
 
             var row = event.target.closest ? event.target.closest('[data-drop-folder-id]') : null;
+            targetRow = row;
             targetFolderId = row ? row.getAttribute('data-drop-folder-id') : '';
 
             // Renomear/excluir so fazem sentido numa pasta especifica — no
@@ -716,18 +843,19 @@
 
         if (renameFolderButton) {
             renameFolderButton.addEventListener('click', function () {
-                if (!targetFolderId) { return; }
-                window.location.href = '/admin/curriculo/documentos/pastas/' + targetFolderId + '/renomear';
+                if (!targetFolderId || !targetRow) { return; }
+                startInlineRename(targetFolderId, targetRow);
             });
         }
 
         if (deleteFolderButton && deleteForm) {
             deleteFolderButton.addEventListener('click', function () {
                 if (!targetFolderId) { return; }
-                if (!confirm('Excluir esta pasta e tudo dentro dela?')) { return; }
 
-                deleteForm.setAttribute('action', '/admin/curriculo/documentos/pastas/' + targetFolderId + '/excluir');
-                deleteForm.submit();
+                confirmDeleteFolder(function () {
+                    deleteForm.setAttribute('action', '/admin/curriculo/documentos/pastas/' + targetFolderId + '/excluir');
+                    deleteForm.submit();
+                });
             });
         }
     }
@@ -745,5 +873,6 @@
         wireShareModal();
         wireFolderDragAndDrop();
         wireFolderTreeContextMenu();
+        wireFolderCardActions();
     });
 }());

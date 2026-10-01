@@ -53,7 +53,8 @@ $renderFolderTreeLevel = function (array $nodes) use (&$renderFolderTreeLevel, &
                     <a
                         class="d-block py-1 text-decoration-none<?= $isActive ? ' fw-bold text-dark' : ' text-secondary' ?>"
                         href="/admin/curriculo/documentos?tab=pastas&folder_id=<?= $nodeId ?>"
-                    ><i class="fa-solid fa-folder me-1"></i><?= htmlspecialchars($node['name'], ENT_QUOTES, 'UTF-8') ?></a>
+                        data-folder-link
+                    ><i class="fa-solid fa-folder me-1"></i><span data-folder-name-text><?= htmlspecialchars($node['name'], ENT_QUOTES, 'UTF-8') ?></span></a>
                 </div>
                 <?php if ($hasChildren): ?>
                     <div class="collapse<?= $isExpanded ? ' show' : '' ?>" id="folder-tree-children-<?= $nodeId ?>">
