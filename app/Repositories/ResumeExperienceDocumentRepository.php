@@ -167,6 +167,26 @@ class ResumeExperienceDocumentRepository
         return array_column($rows, 'path');
     }
 
+    /**
+     * Linhas completas (nao so o path) dos documentos dentro de um conjunto
+     * de pastas — usado pra montar o zip, que alem do caminho fisico precisa
+     * do nome original e do folder_id de cada documento pra saber em qual
+     * subdiretorio do zip ele entra.
+     */
+    public function findByFolderIds(array $folderIds): array
+    {
+        [$placeholdersSql, $params] = $this->buildInClause($folderIds, 'folder');
+
+        if ($placeholdersSql === null) {
+            return [];
+        }
+
+        return $this->database->fetchAll(
+            'SELECT * FROM resume_experience_documents WHERE folder_id IN (' . $placeholdersSql . ') AND deleted_at IS NULL',
+            $params
+        );
+    }
+
     public function move(int $id, ?int $experienceId, ?int $folderId, string $path): void
     {
         $this->database->execute(

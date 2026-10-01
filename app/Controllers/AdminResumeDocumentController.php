@@ -165,6 +165,29 @@ class AdminResumeDocumentController
         FileDownload::stream($absolutePath, $document['mime_type'], $document['original_name']);
     }
 
+    /**
+     * So PDF (por enquanto): abrir um binario arbitrario inline no navegador
+     * nao tem visualizador nenhum do lado do cliente e so confundiria.
+     */
+    public function view(string $id): void
+    {
+        $document = $this->documents->findById((int) $id);
+
+        if ($document === null || $document['mime_type'] !== 'application/pdf') {
+            ErrorPage::notFound();
+            return;
+        }
+
+        $absolutePath = dirname(__DIR__, 2) . $document['path'];
+
+        if (!is_file($absolutePath)) {
+            ErrorPage::notFound();
+            return;
+        }
+
+        FileDownload::stream($absolutePath, $document['mime_type'], $document['original_name'], 'inline');
+    }
+
     public function editTextForm(string $id): void
     {
         $document = $this->findEditableTextDocument($id);
@@ -477,5 +500,172 @@ class AdminResumeDocumentController
             'mime_type' => $mimeType,
             'size' => (int) $file['size'],
         ];
+    }
+
+    public function downloadZip(): void
+    {
+        $documentIds = array_map('intval', (array) ($_POST['document_ids'] ?? []));
+        $folderIds = array_map('intval', (array) ($_POST['folder_ids'] ?? []));
+
+        if (empty($documentIds) && empty($folderIds)) {
+            ErrorPage::notFound();
+            return;
+        }
+
+        $byId = [];
+
+        foreach ($this->folders->all() as $folder) {
+            $byId[(int) $folder['id']] = $folder;
+        }
+
+        // descendantIds() ja inclui a propria pasta pedida — $rootOfDescendant
+        // guarda, pra cada pasta resolvida, qual foi a pasta MARCADA pelo
+        // usuario que a trouxe pra selecao, pra calcular o caminho relativo
+        // dentro do zip a partir dela (nao a partir da raiz da arvore inteira).
+        $allFolderIds = [];
+        $rootOfDescendant = [];
+
+        foreach ($folderIds as $rootId) {
+            if (!isset($byId[$rootId])) {
+                continue;
+            }
+
+            foreach ($this->folders->descendantIds($rootId) as $descendantId) {
+                $allFolderIds[$descendantId] = true;
+
+                if (!isset($rootOfDescendant[$descendantId])) {
+                    $rootOfDescendant[$descendantId] = $rootId;
+                }
+            }
+        }
+
+        $allFolderIds = array_keys($allFolderIds);
+        $folderDocuments = empty($allFolderIds) ? [] : $this->documents->findByFolderIds($allFolderIds);
+        $standaloneDocuments = empty($documentIds) ? [] : $this->documents->findManyByIds($documentIds);
+
+        $zipPath = tempnam(sys_get_temp_dir(), 'docs-zip-');
+        $zip = new \ZipArchive();
+
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            ErrorPage::serverError();
+            return;
+        }
+
+        // Garante que toda pasta selecionada vira um diretorio no zip mesmo
+        // quando ela (ou uma subpasta dela) nao tem nenhum documento dentro —
+        // sem isso, uma pasta vazia marcada simplesmente desaparecia do zip.
+        foreach ($allFolderIds as $folderId) {
+            $rootId = $rootOfDescendant[$folderId];
+            $pathParts = $this->relativeFolderPath($folderId, $rootId, $byId);
+            $zip->addEmptyDir(implode('/', $pathParts));
+        }
+
+        $usedEntryNames = [];
+        $addedCount = 0;
+
+        foreach ($folderDocuments as $document) {
+            $folderId = (int) $document['folder_id'];
+            $rootId = $rootOfDescendant[$folderId] ?? $folderId;
+            $pathParts = $this->relativeFolderPath($folderId, $rootId, $byId);
+            $directory = implode('/', $pathParts) . '/';
+
+            if ($this->addDocumentToZip($zip, $document, $directory, $usedEntryNames)) {
+                $addedCount++;
+            }
+        }
+
+        foreach ($standaloneDocuments as $document) {
+            if ((int) ($document['folder_id'] ?? 0) !== 0 && in_array((int) $document['folder_id'], $allFolderIds, true)) {
+                // Ja foi incluido via pasta selecionada — evita duplicar.
+                continue;
+            }
+
+            if ($this->addDocumentToZip($zip, $document, '', $usedEntryNames)) {
+                $addedCount++;
+            }
+        }
+
+        $zip->close();
+
+        if ($addedCount === 0) {
+            unlink($zipPath);
+            ErrorPage::notFound();
+            return;
+        }
+
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="documentos.zip"');
+        header('Content-Length: ' . (string) filesize($zipPath));
+        readfile($zipPath);
+        unlink($zipPath);
+    }
+
+    private function addDocumentToZip(\ZipArchive $zip, array $document, string $directory, array &$usedEntryNames): bool
+    {
+        $absolutePath = dirname(__DIR__, 2) . $document['path'];
+
+        if (!is_file($absolutePath)) {
+            return false;
+        }
+
+        $entryName = $this->uniqueZipEntryName($directory . $document['original_name'], $usedEntryNames);
+
+        return $zip->addFile($absolutePath, $entryName);
+    }
+
+    /**
+     * "Financeiro/2026" — lista de nomes de pasta da raiz da SELECAO (nao da
+     * raiz da arvore inteira) ate $folderId, pra cada documento/pasta cair no
+     * subdiretorio certo dentro do zip.
+     */
+    private function relativeFolderPath(int $folderId, int $rootId, array $byId): array
+    {
+        $names = [];
+        $currentId = $folderId;
+
+        while ($currentId !== null && isset($byId[$currentId])) {
+            array_unshift($names, $byId[$currentId]['name']);
+
+            if ($currentId === $rootId) {
+                break;
+            }
+
+            $currentId = $byId[$currentId]['parent_id'] !== null ? (int) $byId[$currentId]['parent_id'] : null;
+        }
+
+        return $names;
+    }
+
+    /**
+     * Dois documentos com o mesmo original_name na mesma pasta sao permitidos
+     * no banco (o nome unico de verdade e o file_name no disco) — sem isso o
+     * segundo arquivo simplesmente sobrescreveria o primeiro dentro do zip.
+     */
+    private function uniqueZipEntryName(string $name, array &$usedEntryNames): string
+    {
+        if (!isset($usedEntryNames[$name])) {
+            $usedEntryNames[$name] = true;
+            return $name;
+        }
+
+        $extension = '';
+        $base = $name;
+        $dotPos = strrpos($name, '.');
+
+        if ($dotPos !== false) {
+            $extension = substr($name, $dotPos);
+            $base = substr($name, 0, $dotPos);
+        }
+
+        $counter = 2;
+
+        do {
+            $candidate = $base . ' (' . $counter . ')' . $extension;
+            $counter++;
+        } while (isset($usedEntryNames[$candidate]));
+
+        $usedEntryNames[$candidate] = true;
+
+        return $candidate;
     }
 }

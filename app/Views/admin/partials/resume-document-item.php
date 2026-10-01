@@ -27,6 +27,9 @@ $documentSizeLabel = ((int) $document['size']) >= 1048576
         >
     </div>
     <span class="text-secondary small flex-shrink-0"><?= $documentSizeLabel ?></span>
+    <?php if ($document['mime_type'] === 'application/pdf'): ?>
+        <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/visualizar" target="_blank" rel="noopener" title="Visualizar"><i class="fa-solid fa-eye"></i></a>
+    <?php endif; ?>
     <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/download" title="Baixar"><i class="fa-solid fa-download"></i></a>
     <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/mover?return=<?= urlencode($documentReturnUrl) ?>" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>
     <?php if ($document['mime_type'] === 'text/plain'): ?>

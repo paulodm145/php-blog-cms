@@ -194,6 +194,7 @@ $router->post('/admin/curriculo/experiencia/{id}/mover-cima', [AdminResumeExperi
 $router->post('/admin/curriculo/experiencia/{id}/mover-baixo', [AdminResumeExperienceController::class, 'moveDown']);
 $router->get('/admin/curriculo/documentos', [AdminResumeDocumentController::class, 'index']);
 $router->post('/admin/curriculo/documentos/upload', [AdminResumeDocumentController::class, 'upload']);
+$router->post('/admin/curriculo/documentos/baixar-zip', [AdminResumeDocumentController::class, 'downloadZip']);
 $router->get('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFileForm']);
 $router->post('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFile']);
 $router->get('/admin/curriculo/documentos/pastas/criar', [AdminResumeDocumentFolderController::class, 'createForm']);
@@ -211,6 +212,7 @@ $router->get('/admin/curriculo/documentos/{id}/mover', [AdminResumeDocumentContr
 $router->post('/admin/curriculo/documentos/{id}/mover', [AdminResumeDocumentController::class, 'move']);
 $router->get('/admin/curriculo/documentos/{id}/editar-conteudo', [AdminResumeDocumentController::class, 'editTextForm']);
 $router->post('/admin/curriculo/documentos/{id}/editar-conteudo', [AdminResumeDocumentController::class, 'editText']);
+$router->get('/admin/curriculo/documentos/{id}/visualizar', [AdminResumeDocumentController::class, 'view']);
 $router->post('/admin/curriculo/documentos/{id}', [AdminResumeDocumentController::class, 'updateCaption']);
 $router->post('/admin/curriculo/documentos/{id}/delete', [AdminResumeDocumentController::class, 'delete']);
 $router->get('/admin/curriculo/documentos/{id}/download', [AdminResumeDocumentController::class, 'download']);

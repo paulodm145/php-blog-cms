@@ -38,6 +38,7 @@
         <?php foreach ($folderChildren as $child): ?>
             <div class="col">
                 <div class="border rounded p-2 d-flex align-items-center justify-content-between" draggable="true" data-draggable-folder-id="<?= (int) $child['id'] ?>">
+                    <input class="form-check-input flex-shrink-0 me-2" type="checkbox" data-folder-checkbox title="Selecionar pasta (com tudo dentro) pra baixar em ZIP">
                     <a class="text-decoration-none flex-grow-1 min-w-0" href="/admin/curriculo/documentos?tab=pastas&folder_id=<?= (int) $child['id'] ?>" data-folder-link>
                         <i class="fa-solid fa-folder me-2"></i>
                         <span data-folder-name-text><?= htmlspecialchars($child['name'], ENT_QUOTES, 'UTF-8') ?></span>

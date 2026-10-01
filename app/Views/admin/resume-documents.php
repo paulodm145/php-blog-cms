@@ -20,12 +20,13 @@
 
             <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-3" id="documents-selection-bar">
                 <span class="text-secondary small">
-                    <span id="documents-selected-count">0</span> selecionado(s)
+                    <span id="documents-selected-count">0 selecionado(s)</span>
                     <span id="documents-editing-indicator" class="d-none text-primary"> — editando link compartilhado</span>
                 </span>
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-outline-secondary d-none" id="documents-cancel-edit" type="button">Cancelar edição</button>
                     <button class="btn btn-sm btn-outline-secondary" id="documents-clear-selection" type="button">Limpar seleção</button>
+                    <button class="btn btn-sm btn-outline-primary" id="documents-zip-trigger" type="button" disabled>Baixar ZIP</button>
                     <button class="btn btn-sm btn-primary" id="documents-share-trigger" type="button" disabled>Compartilhar selecionados</button>
                 </div>
             </div>
@@ -74,7 +75,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-9">
+                        <div class="col-lg-9" data-folder-chain="<?= implode(',', array_column($folderBreadcrumb, 'id')) ?>">
                             <?php require __DIR__ . '/partials/resume-document-folder-tab.php'; ?>
                         </div>
                     </div>

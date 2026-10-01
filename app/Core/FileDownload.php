@@ -4,7 +4,7 @@ namespace App\Core;
 
 class FileDownload
 {
-    public static function stream(string $absolutePath, string $mimeType, string $originalName): void
+    public static function stream(string $absolutePath, string $mimeType, string $originalName, string $disposition = 'attachment'): void
     {
         // Content-Disposition manda dois nomes: `filename` (ASCII puro, pro
         // navegador que nao entende o formato estendido) e `filename*`
@@ -17,7 +17,7 @@ class FileDownload
 
         header('Content-Type: ' . $mimeType);
         header(
-            'Content-Disposition: attachment; filename="' . $asciiName . '"; '
+            'Content-Disposition: ' . $disposition . '; filename="' . $asciiName . '"; '
             . "filename*=UTF-8''" . rawurlencode($safeName)
         );
         header('Content-Length: ' . (string) filesize($absolutePath));

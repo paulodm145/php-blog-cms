@@ -2,25 +2,34 @@
     'use strict';
 
     var SELECTION_STORAGE_KEY = 'resumeDocumentsSelection';
+    var FOLDER_SELECTION_STORAGE_KEY = 'resumeDocumentsFolderSelection';
 
-    function loadSelection() {
+    function loadStoredMap(key) {
         try {
-            var raw = window.sessionStorage.getItem(SELECTION_STORAGE_KEY);
+            var raw = window.sessionStorage.getItem(key);
             return raw ? JSON.parse(raw) : {};
         } catch (error) {
             return {};
         }
     }
 
-    function saveSelection() {
+    function saveStoredMap(key, map) {
         try {
-            window.sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(selectedIds));
+            window.sessionStorage.setItem(key, JSON.stringify(map));
         } catch (error) {
             // sessionStorage indisponivel (ex.: modo privado) — segue so em memoria pro resto da sessao de navegacao
         }
     }
 
+    function loadSelection() { return loadStoredMap(SELECTION_STORAGE_KEY); }
+    function saveSelection() { saveStoredMap(SELECTION_STORAGE_KEY, selectedIds); }
+    function saveFolderSelection() { saveStoredMap(FOLDER_SELECTION_STORAGE_KEY, selectedFolderIds); }
+
     var selectedIds = loadSelection();
+    // Selecao de pastas inteiras (com tudo dentro, recursivamente) pro
+    // download em ZIP — paralela a selectedIds (documentos), que tambem
+    // serve o compartilhamento. Pastas nao entram no compartilhamento.
+    var selectedFolderIds = loadStoredMap(FOLDER_SELECTION_STORAGE_KEY);
 
     // Quando preenchido, "Compartilhar selecionados" vira "Salvar
     // alterações" e grava num link ja existente (compartilhamentos/{id}/
@@ -68,13 +77,19 @@
 
     function clearSelection() {
         selectedIds = {};
+        selectedFolderIds = {};
         saveSelection();
+        saveFolderSelection();
 
-        var checked = document.querySelectorAll('[data-document-checkbox]:checked');
+        // Zera tambem o estado "herdado" (checked+disabled) de uma pasta-mae
+        // que tenha sido desmarcada por tabela — sem isso um checkbox
+        // continuaria preso em disabled mesmo com a selecao ja vazia.
+        var checkboxes = document.querySelectorAll('[data-document-checkbox], [data-folder-checkbox]');
         var i;
 
-        for (i = 0; i < checked.length; i++) {
-            checked[i].checked = false;
+        for (i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = false;
+            checkboxes[i].disabled = false;
         }
 
         updateSelectionBar();
@@ -97,6 +112,43 @@
 
         for (i = 0; i < managers.length; i++) {
             syncCheckboxes(managers[i]);
+        }
+    }
+
+    function syncFolderCheckboxes() {
+        var checkboxes = document.querySelectorAll('[data-folder-checkbox]');
+        var i, card, folderId;
+
+        for (i = 0; i < checkboxes.length; i++) {
+            card = checkboxes[i].closest('[data-draggable-folder-id]');
+            if (!card) { continue; }
+
+            folderId = card.getAttribute('data-draggable-folder-id');
+            checkboxes[i].checked = !!selectedFolderIds[folderId];
+        }
+    }
+
+    /**
+     * Se a pasta sendo exibida (ou uma pasta-mae dela) foi marcada pra ZIP
+     * na tela anterior, tudo visivel aqui dentro (subpastas e documentos) ja
+     * vai junto no zip de qualquer jeito — entao aparece marcado e travado,
+     * em vez de deixar parecer que precisa marcar de novo item por item.
+     */
+    function applyInheritedFolderSelection() {
+        var container = document.querySelector('[data-folder-chain]');
+        if (!container) { return; }
+
+        var chain = container.getAttribute('data-folder-chain').split(',').filter(function (id) { return id !== ''; });
+        var inherited = chain.some(function (id) { return !!selectedFolderIds[id]; });
+
+        if (!inherited) { return; }
+
+        var checkboxes = container.querySelectorAll('[data-folder-checkbox], [data-document-checkbox]');
+        var i;
+
+        for (i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = true;
+            checkboxes[i].disabled = true;
         }
     }
 
@@ -135,11 +187,21 @@
 
     function updateSelectionBar() {
         var countEl = document.getElementById('documents-selected-count');
-        var button = document.getElementById('documents-share-trigger');
-        var count = Object.keys(selectedIds).length;
+        var shareButton = document.getElementById('documents-share-trigger');
+        var zipButton = document.getElementById('documents-zip-trigger');
+        var documentCount = Object.keys(selectedIds).length;
+        var folderCount = Object.keys(selectedFolderIds).length;
 
-        if (countEl) { countEl.textContent = String(count); }
-        if (button) { button.disabled = count === 0; }
+        if (countEl) {
+            countEl.textContent = folderCount > 0
+                ? documentCount + ' documento(s), ' + folderCount + ' pasta(s) selecionado(s)'
+                : documentCount + ' selecionado(s)';
+        }
+
+        // Pastas nao entram no link compartilhado (so no ZIP) — por isso o
+        // botao de compartilhar so olha pra documentCount.
+        if (shareButton) { shareButton.disabled = documentCount === 0; }
+        if (zipButton) { zipButton.disabled = (documentCount + folderCount) === 0; }
     }
 
     function buildDocumentItem(item, selectable) {
@@ -154,6 +216,9 @@
                 '<input class="form-control form-control-sm border-0 bg-transparent px-0 document-caption-input" type="text" placeholder="Adicionar legenda…" value="" data-caption-input>' +
             '</div>' +
             '<span class="text-secondary small flex-shrink-0">' + formatSize(item.size) + '</span>' +
+            (item.mime_type === 'application/pdf'
+                ? '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/visualizar" target="_blank" rel="noopener" title="Visualizar"><i class="fa-solid fa-eye"></i></a>'
+                : '') +
             '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/download" title="Baixar"><i class="fa-solid fa-download"></i></a>' +
             '<a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/' + item.id + '/mover?return=' + encodeURIComponent(window.location.pathname + window.location.search) + '" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>' +
             '<button class="admin-action-link admin-action-danger flex-shrink-0" type="button" data-delete-document title="Excluir"><i class="fa-solid fa-trash"></i></button>';
@@ -732,6 +797,7 @@
                 var folderId = card.getAttribute('data-draggable-folder-id');
                 var renameButton = card.querySelector('[data-rename-folder]');
                 var deleteButton = card.querySelector('[data-delete-folder]');
+                var checkbox = card.querySelector('[data-folder-checkbox]');
 
                 if (renameButton) {
                     renameButton.addEventListener('click', function () {
@@ -744,6 +810,19 @@
                         confirmDeleteFolder(function () {
                             deleteButton.closest('form').submit();
                         });
+                    });
+                }
+
+                if (checkbox) {
+                    checkbox.addEventListener('change', function () {
+                        if (checkbox.checked) {
+                            selectedFolderIds[folderId] = true;
+                        } else {
+                            delete selectedFolderIds[folderId];
+                        }
+
+                        saveFolderSelection();
+                        updateSelectionBar();
                     });
                 }
             }(cards[i]));
@@ -860,6 +939,39 @@
         }
     }
 
+    /**
+     * Monta um <form> escondido e submete via navegacao normal (nao fetch) —
+     * e a unica forma simples de disparar um download de arquivo gerado
+     * (Content-Disposition: attachment) com uma lista de IDs via POST sem
+     * sair da pagina nem precisar lidar com blob/URL.createObjectURL.
+     */
+    function wireZipDownload() {
+        var zipButton = document.getElementById('documents-zip-trigger');
+        if (!zipButton) { return; }
+
+        zipButton.addEventListener('click', function () {
+            var form = document.createElement('form');
+            form.method = 'post';
+            form.action = '/admin/curriculo/documentos/baixar-zip';
+            form.style.display = 'none';
+
+            function appendHidden(name, value) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            Object.keys(selectedIds).forEach(function (id) { appendHidden('document_ids[]', id); });
+            Object.keys(selectedFolderIds).forEach(function (id) { appendHidden('folder_ids[]', id); });
+
+            document.body.appendChild(form);
+            form.submit();
+            form.remove();
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         var managers = document.querySelectorAll('.document-manager');
         var i;
@@ -869,10 +981,13 @@
             syncCheckboxes(managers[i]);
         }
 
+        syncFolderCheckboxes();
+        applyInheritedFolderSelection();
         updateSelectionBar();
         wireShareModal();
         wireFolderDragAndDrop();
         wireFolderTreeContextMenu();
         wireFolderCardActions();
+        wireZipDownload();
     });
 }());
