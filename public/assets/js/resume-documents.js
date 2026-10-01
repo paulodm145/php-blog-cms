@@ -674,6 +674,9 @@
 
         var targetFolderId = '';
         var newFolderButton = menu.querySelector('[data-context-new-folder]');
+        var renameFolderButton = menu.querySelector('[data-context-rename-folder]');
+        var deleteFolderButton = menu.querySelector('[data-context-delete-folder]');
+        var deleteForm = document.getElementById('folder-tree-delete-form');
 
         function hideMenu() {
             menu.classList.remove('show');
@@ -684,6 +687,12 @@
 
             var row = event.target.closest ? event.target.closest('[data-drop-folder-id]') : null;
             targetFolderId = row ? row.getAttribute('data-drop-folder-id') : '';
+
+            // Renomear/excluir so fazem sentido numa pasta especifica — no
+            // clique direito na raiz ou no espaco vazio do painel (onde
+            // targetFolderId vem vazio) so "Nova pasta aqui" aparece.
+            if (renameFolderButton) { renameFolderButton.classList.toggle('d-none', targetFolderId === ''); }
+            if (deleteFolderButton) { deleteFolderButton.classList.toggle('d-none', targetFolderId === ''); }
 
             menu.style.left = event.clientX + 'px';
             menu.style.top = event.clientY + 'px';
@@ -702,6 +711,23 @@
         if (newFolderButton) {
             newFolderButton.addEventListener('click', function () {
                 window.location.href = '/admin/curriculo/documentos/pastas/criar?parent_id=' + targetFolderId;
+            });
+        }
+
+        if (renameFolderButton) {
+            renameFolderButton.addEventListener('click', function () {
+                if (!targetFolderId) { return; }
+                window.location.href = '/admin/curriculo/documentos/pastas/' + targetFolderId + '/renomear';
+            });
+        }
+
+        if (deleteFolderButton && deleteForm) {
+            deleteFolderButton.addEventListener('click', function () {
+                if (!targetFolderId) { return; }
+                if (!confirm('Excluir esta pasta e tudo dentro dela?')) { return; }
+
+                deleteForm.setAttribute('action', '/admin/curriculo/documentos/pastas/' + targetFolderId + '/excluir');
+                deleteForm.submit();
             });
         }
     }

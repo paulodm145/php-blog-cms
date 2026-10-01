@@ -174,4 +174,12 @@ class ResumeExperienceDocumentRepository
             ['experience_id' => $experienceId, 'folder_id' => $folderId, 'path' => $path, 'id' => $id]
         );
     }
+
+    public function updateSize(int $id, int $size): void
+    {
+        $this->database->execute(
+            'UPDATE resume_experience_documents SET size = :size WHERE id = :id',
+            ['size' => $size, 'id' => $id]
+        );
+    }
 }

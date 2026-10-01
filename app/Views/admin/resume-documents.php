@@ -123,7 +123,15 @@
                 <button class="dropdown-item" type="button" data-context-new-folder>
                     <i class="fa-solid fa-folder-plus me-1"></i> Nova pasta aqui
                 </button>
+                <button class="dropdown-item d-none" type="button" data-context-rename-folder>
+                    <i class="fa-solid fa-pen me-1"></i> Renomear
+                </button>
+                <button class="dropdown-item d-none text-danger" type="button" data-context-delete-folder>
+                    <i class="fa-solid fa-trash me-1"></i> Excluir
+                </button>
             </div>
+            <form id="folder-tree-delete-form" class="d-none" method="post" action="">
+            </form>
 <?php require __DIR__ . '/partials/shell-bottom.php'; ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 <script src="/assets/js/resume-documents.js?v=<?= @filemtime(dirname(__DIR__, 3) . '/public/assets/js/resume-documents.js') ?: '1' ?>"></script>

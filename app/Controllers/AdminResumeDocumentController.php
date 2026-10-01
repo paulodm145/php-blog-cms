@@ -165,6 +165,67 @@ class AdminResumeDocumentController
         FileDownload::stream($absolutePath, $document['mime_type'], $document['original_name']);
     }
 
+    public function editTextForm(string $id): void
+    {
+        $document = $this->findEditableTextDocument($id);
+
+        if ($document === null) {
+            ErrorPage::notFound();
+            return;
+        }
+
+        $absolutePath = dirname(__DIR__, 2) . $document['path'];
+        $returnUrl = $this->sanitizeReturnUrl($_GET['return'] ?? null);
+
+        View::render('admin/resume-document-edit-text-form', [
+            'title' => 'Editar arquivo | Admin paulorb.dev',
+            'user' => Auth::user(),
+            'documentId' => (int) $document['id'],
+            'originalName' => $document['original_name'],
+            'content' => is_file($absolutePath) ? (string) file_get_contents($absolutePath) : '',
+            'backHref' => $returnUrl,
+            'returnUrl' => $returnUrl,
+        ]);
+    }
+
+    public function editText(string $id): void
+    {
+        $document = $this->findEditableTextDocument($id);
+
+        if ($document === null) {
+            ErrorPage::notFound();
+            return;
+        }
+
+        $absolutePath = dirname(__DIR__, 2) . $document['path'];
+        $content = (string) ($_POST['content'] ?? '');
+
+        if (file_put_contents($absolutePath, $content) === false) {
+            ErrorPage::serverError();
+            return;
+        }
+
+        $this->documents->updateSize((int) $document['id'], strlen($content));
+
+        header('Location: ' . $this->sanitizeReturnUrl($_POST['return'] ?? null));
+    }
+
+    /**
+     * So permite editar documentos "text/plain" (os criados via "Novo
+     * arquivo") — abrir um PDF/imagem num <textarea> e regravar por cima
+     * corromperia o arquivo original sem nenhum aviso.
+     */
+    private function findEditableTextDocument(string $id): ?array
+    {
+        $document = $this->documents->findById((int) $id);
+
+        if ($document === null || $document['mime_type'] !== 'text/plain') {
+            return null;
+        }
+
+        return $document;
+    }
+
     public function moveForm(string $id): void
     {
         $document = $this->documents->findById((int) $id);

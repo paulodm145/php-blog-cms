@@ -29,5 +29,8 @@ $documentSizeLabel = ((int) $document['size']) >= 1048576
     <span class="text-secondary small flex-shrink-0"><?= $documentSizeLabel ?></span>
     <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/download" title="Baixar"><i class="fa-solid fa-download"></i></a>
     <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/mover?return=<?= urlencode($documentReturnUrl) ?>" title="Mover"><i class="fa-solid fa-arrows-up-down-left-right"></i></a>
+    <?php if ($document['mime_type'] === 'text/plain'): ?>
+        <a class="admin-action-link flex-shrink-0" href="/admin/curriculo/documentos/<?= (int) $document['id'] ?>/editar-conteudo?return=<?= urlencode($documentReturnUrl) ?>" title="Editar conteúdo"><i class="fa-solid fa-pen"></i></a>
+    <?php endif; ?>
     <button class="admin-action-link admin-action-danger flex-shrink-0" type="button" data-delete-document title="Excluir"><i class="fa-solid fa-trash"></i></button>
 </li>
