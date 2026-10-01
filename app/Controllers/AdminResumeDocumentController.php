@@ -41,6 +41,7 @@ class AdminResumeDocumentController
             'folderBreadcrumb' => $currentFolderId !== null ? $this->folders->breadcrumb($currentFolderId) : [],
             'folderChildren' => $this->folders->children($currentFolderId),
             'folderDocuments' => $this->documents->listByFolder($currentFolderId),
+            'allFolders' => $this->folders->all(),
         ]);
     }
 

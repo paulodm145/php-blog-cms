@@ -57,7 +57,27 @@
                 </div>
 
                 <div class="tab-pane fade<?= $activeTab === 'pastas' ? ' show active' : '' ?>" id="tab-pastas" role="tabpanel">
-                    <?php require __DIR__ . '/partials/resume-document-folder-tab.php'; ?>
+                    <div class="d-lg-none mb-3">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#folder-tree-offcanvas">
+                            <i class="fa-solid fa-sitemap"></i> Árvore de pastas
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-3 mb-3 mb-lg-0">
+                            <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="folder-tree-offcanvas">
+                                <div class="offcanvas-header d-lg-none">
+                                    <h5 class="offcanvas-title">Pastas</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                                </div>
+                                <div class="offcanvas-body border rounded p-3">
+                                    <?php require __DIR__ . '/partials/resume-document-folder-tree.php'; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-9">
+                            <?php require __DIR__ . '/partials/resume-document-folder-tab.php'; ?>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade<?= $activeTab === 'shares' ? ' show active' : '' ?>" id="tab-shares" role="tabpanel">
