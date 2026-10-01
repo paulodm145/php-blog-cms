@@ -27,14 +27,17 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <span class="text-secondary small"><?= count($folderChildren) ?> subpasta(s)</span>
-    <a class="btn btn-sm btn-outline-primary" href="/admin/curriculo/documentos/pastas/criar?parent_id=<?= $currentFolderId !== null ? (int) $currentFolderId : '' ?>">Nova pasta</a>
+    <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/curriculo/documentos/novo-arquivo?folder_id=<?= $currentFolderId !== null ? (int) $currentFolderId : '' ?>">Novo arquivo</a>
+        <a class="btn btn-sm btn-outline-primary" href="/admin/curriculo/documentos/pastas/criar?parent_id=<?= $currentFolderId !== null ? (int) $currentFolderId : '' ?>">Nova pasta</a>
+    </div>
 </div>
 
 <?php if (!empty($folderChildren)): ?>
     <div class="row row-cols-1 row-cols-md-3 g-2 mb-4">
         <?php foreach ($folderChildren as $child): ?>
             <div class="col">
-                <div class="border rounded p-2 d-flex align-items-center justify-content-between">
+                <div class="border rounded p-2 d-flex align-items-center justify-content-between" draggable="true" data-draggable-folder-id="<?= (int) $child['id'] ?>">
                     <a class="text-decoration-none flex-grow-1 min-w-0" href="/admin/curriculo/documentos?tab=pastas&folder_id=<?= (int) $child['id'] ?>">
                         <i class="fa-solid fa-folder me-2"></i>
                         <?= htmlspecialchars($child['name'], ENT_QUOTES, 'UTF-8') ?>

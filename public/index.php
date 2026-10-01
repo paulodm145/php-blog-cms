@@ -194,6 +194,8 @@ $router->post('/admin/curriculo/experiencia/{id}/mover-cima', [AdminResumeExperi
 $router->post('/admin/curriculo/experiencia/{id}/mover-baixo', [AdminResumeExperienceController::class, 'moveDown']);
 $router->get('/admin/curriculo/documentos', [AdminResumeDocumentController::class, 'index']);
 $router->post('/admin/curriculo/documentos/upload', [AdminResumeDocumentController::class, 'upload']);
+$router->get('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFileForm']);
+$router->post('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFile']);
 $router->get('/admin/curriculo/documentos/pastas/criar', [AdminResumeDocumentFolderController::class, 'createForm']);
 $router->post('/admin/curriculo/documentos/pastas', [AdminResumeDocumentFolderController::class, 'store']);
 $router->get('/admin/curriculo/documentos/pastas/{id}/renomear', [AdminResumeDocumentFolderController::class, 'renameForm']);

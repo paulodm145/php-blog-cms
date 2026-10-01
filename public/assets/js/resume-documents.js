@@ -594,6 +594,110 @@
         }
     }
 
+    /**
+     * Arrasta um card de subpasta (area central) e solta sobre um item da
+     * arvore (painel lateral) — reaproveita o mesmo endpoint de "Mover"
+     * que o link/form ja usa, so que via fetch em vez de navegacao. Como
+     * o endpoint so sabe responder com um redirect (302), a forma mais
+     * simples de saber se deu certo sem mudar o backend e olhar
+     * response.url depois do fetch seguir o redirect sozinho: se ele
+     * carrega "erro=" (ciclo detectado, destino sumiu nesse meio tempo
+     * etc.), mostra o erro; senao, navega pra onde o redirect mandou.
+     */
+    function moveFolderViaDrag(folderId, targetFolderId) {
+        var formData = new FormData();
+        formData.append('destination', 'folder:' + (targetFolderId || ''));
+
+        fetch('/admin/curriculo/documentos/pastas/' + folderId + '/mover', { method: 'POST', body: formData })
+            .then(function (response) {
+                var finalUrl = response.url;
+                var match = /[?&]erro=([^&]*)/.exec(finalUrl);
+
+                if (match) {
+                    notifyError(decodeURIComponent(match[1].replace(/\+/g, ' ')));
+                    return;
+                }
+
+                window.location.href = finalUrl;
+            })
+            .catch(function () {
+                notifyError('Falha ao mover a pasta');
+            });
+    }
+
+    function wireFolderDragAndDrop() {
+        var cards = document.querySelectorAll('[data-draggable-folder-id]');
+        var dropTargets = document.querySelectorAll('[data-drop-folder-id]');
+        var i;
+
+        for (i = 0; i < cards.length; i++) {
+            cards[i].addEventListener('dragstart', function (event) {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', this.getAttribute('data-draggable-folder-id'));
+            });
+        }
+
+        for (i = 0; i < dropTargets.length; i++) {
+            dropTargets[i].addEventListener('dragover', function (event) {
+                event.preventDefault();
+                this.classList.add('folder-drop-target-active');
+            });
+
+            dropTargets[i].addEventListener('dragleave', function () {
+                this.classList.remove('folder-drop-target-active');
+            });
+
+            dropTargets[i].addEventListener('drop', function (event) {
+                event.preventDefault();
+                this.classList.remove('folder-drop-target-active');
+
+                var draggedId = event.dataTransfer.getData('text/plain');
+                var targetFolderId = this.getAttribute('data-drop-folder-id');
+
+                if (!draggedId || draggedId === targetFolderId) { return; }
+
+                moveFolderViaDrag(draggedId, targetFolderId);
+            });
+        }
+    }
+
+    function wireFolderTreeContextMenu() {
+        var tree = document.querySelector('[data-folder-tree]');
+        var menu = document.getElementById('folder-tree-context-menu');
+
+        if (!tree || !menu) { return; }
+
+        var targetFolderId = '';
+        var newFolderButton = menu.querySelector('[data-context-new-folder]');
+
+        function hideMenu() {
+            menu.classList.add('d-none');
+        }
+
+        tree.addEventListener('contextmenu', function (event) {
+            event.preventDefault();
+
+            var row = event.target.closest ? event.target.closest('[data-drop-folder-id]') : null;
+            targetFolderId = row ? row.getAttribute('data-drop-folder-id') : '';
+
+            menu.style.left = event.clientX + 'px';
+            menu.style.top = event.clientY + 'px';
+            menu.classList.remove('d-none');
+        });
+
+        document.addEventListener('click', hideMenu);
+        document.addEventListener('scroll', hideMenu, true);
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') { hideMenu(); }
+        });
+
+        if (newFolderButton) {
+            newFolderButton.addEventListener('click', function () {
+                window.location.href = '/admin/curriculo/documentos/pastas/criar?parent_id=' + targetFolderId;
+            });
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         var managers = document.querySelectorAll('.document-manager');
         var i;
@@ -605,5 +709,7 @@
 
         updateSelectionBar();
         wireShareModal();
+        wireFolderDragAndDrop();
+        wireFolderTreeContextMenu();
     });
 }());

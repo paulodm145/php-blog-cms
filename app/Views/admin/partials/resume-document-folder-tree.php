@@ -37,7 +37,7 @@ $renderFolderTreeLevel = function (array $nodes) use (&$renderFolderTreeLevel, &
                 $isExpanded = isset($expandedIds[$nodeId]) || $isActive;
             ?>
             <li>
-                <div class="d-flex align-items-center folder-tree-row">
+                <div class="d-flex align-items-center folder-tree-row" data-drop-folder-id="<?= $nodeId ?>">
                     <?php if ($hasChildren): ?>
                         <button
                             class="btn btn-sm btn-link p-0 me-1 folder-tree-toggle"
@@ -71,9 +71,11 @@ $renderFolderTreeLevel = function (array $nodes) use (&$renderFolderTreeLevel, &
     .folder-tree-toggle { width: 1.5rem; text-align: center; }
     .folder-tree-chevron { transition: transform .15s ease; }
     .folder-tree-toggle[aria-expanded="true"] .folder-tree-chevron { transform: rotate(90deg); }
+    .folder-tree-row.folder-drop-target-active { background-color: rgba(13, 110, 253, .15); border-radius: 4px; }
+    #folder-tree-context-menu { z-index: 1050; min-width: 10rem; }
 </style>
-<nav aria-label="Árvore de pastas">
-    <div class="d-flex align-items-center folder-tree-row">
+<nav aria-label="Árvore de pastas" data-folder-tree>
+    <div class="d-flex align-items-center folder-tree-row" data-drop-folder-id="">
         <span class="folder-tree-spacer"></span>
         <a
             class="d-block py-1 text-decoration-none<?= $currentFolderId === null ? ' fw-bold text-dark' : ' text-secondary' ?>"
@@ -87,3 +89,8 @@ $renderFolderTreeLevel = function (array $nodes) use (&$renderFolderTreeLevel, &
         <p class="text-secondary small mt-2 mb-0">Nenhuma pasta criada ainda.</p>
     <?php endif; ?>
 </nav>
+<div id="folder-tree-context-menu" class="dropdown-menu d-none" style="position: fixed;">
+    <button class="dropdown-item" type="button" data-context-new-folder>
+        <i class="fa-solid fa-folder-plus me-1"></i> Nova pasta aqui
+    </button>
+</div>

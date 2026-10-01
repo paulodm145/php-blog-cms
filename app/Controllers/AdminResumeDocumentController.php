@@ -311,6 +311,67 @@ class AdminResumeDocumentController
         return $options;
     }
 
+    public function createTextFileForm(): void
+    {
+        $folderId = $this->folders->resolveId($_GET['folder_id'] ?? null);
+
+        View::render('admin/resume-document-text-file-form', [
+            'title' => 'Novo arquivo de texto | Admin paulorb.dev',
+            'user' => Auth::user(),
+            'folderId' => $folderId,
+            'backHref' => $this->folderTabUrl($folderId),
+        ]);
+    }
+
+    public function createTextFile(): void
+    {
+        $folderId = $this->folders->resolveId($_POST['folder_id'] ?? null);
+        $name = trim((string) ($_POST['name'] ?? ''));
+        $createFormUrl = '/admin/curriculo/documentos/novo-arquivo?folder_id=' . ($folderId !== null ? $folderId : '');
+
+        if ($name === '' || mb_strlen($name) > 160) {
+            header('Location: ' . $createFormUrl . '&erro=' . urlencode('Informe um nome de arquivo com até 160 caracteres.'));
+            return;
+        }
+
+        if (strtolower(substr($name, -4)) !== '.txt') {
+            $name .= '.txt';
+        }
+
+        $directory = $folderId !== null ? 'pasta-' . $folderId : 'pasta-raiz';
+        $uploadDir = dirname(__DIR__, 2) . '/storage/uploads/resume-documents/' . $directory;
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $fileName = UploadValidator::generateFileName($name, 'txt');
+        $absolutePath = $uploadDir . '/' . $fileName;
+
+        if (file_put_contents($absolutePath, '') === false) {
+            ErrorPage::serverError();
+            return;
+        }
+
+        $this->documents->create([
+            'experience_id' => null,
+            'folder_id' => $folderId,
+            'file_name' => $fileName,
+            'original_name' => $name,
+            'path' => '/storage/uploads/resume-documents/' . $directory . '/' . $fileName,
+            'mime_type' => 'text/plain',
+            'size' => 0,
+            'uploaded_by' => Auth::user()['id'] ?? null,
+        ]);
+
+        header('Location: ' . $this->folderTabUrl($folderId));
+    }
+
+    private function folderTabUrl(?int $folderId): string
+    {
+        return '/admin/curriculo/documentos?tab=pastas' . ($folderId !== null ? '&folder_id=' . $folderId : '');
+    }
+
     private function storeUploadedFile(array $owner, array $file): array
     {
         if ((int) $file['error'] !== UPLOAD_ERR_OK) {
