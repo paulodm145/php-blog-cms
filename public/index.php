@@ -195,6 +195,7 @@ $router->post('/admin/curriculo/experiencia/{id}/mover-baixo', [AdminResumeExper
 $router->get('/admin/curriculo/documentos', [AdminResumeDocumentController::class, 'index']);
 $router->post('/admin/curriculo/documentos/upload', [AdminResumeDocumentController::class, 'upload']);
 $router->post('/admin/curriculo/documentos/baixar-zip', [AdminResumeDocumentController::class, 'downloadZip']);
+$router->post('/admin/curriculo/documentos/excluir-selecionados', [AdminResumeDocumentController::class, 'deleteSelected']);
 $router->get('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFileForm']);
 $router->post('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFile']);
 $router->get('/admin/curriculo/documentos/pastas/criar', [AdminResumeDocumentFolderController::class, 'createForm']);

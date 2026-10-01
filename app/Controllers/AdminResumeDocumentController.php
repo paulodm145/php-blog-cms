@@ -502,6 +502,82 @@ class AdminResumeDocumentController
         ];
     }
 
+    public function deleteSelected(): void
+    {
+        $documentIds = array_map('intval', (array) ($_POST['document_ids'] ?? []));
+        $folderIds = array_map('intval', (array) ($_POST['folder_ids'] ?? []));
+        $returnUrl = $this->sanitizeReturnUrl($_POST['return'] ?? null);
+
+        if (empty($documentIds) && empty($folderIds)) {
+            header('Location: ' . $returnUrl);
+            return;
+        }
+
+        // Mesma resolucao recursiva do downloadZip: cada pasta pedida traz
+        // junto todos os seus descendentes (descendantIds ja inclui ela
+        // mesma).
+        $allFolderIds = [];
+
+        foreach ($folderIds as $folderId) {
+            if ($this->folders->find($folderId) === null) {
+                continue;
+            }
+
+            foreach ($this->folders->descendantIds($folderId) as $descendantId) {
+                $allFolderIds[$descendantId] = true;
+            }
+        }
+
+        $allFolderIds = array_keys($allFolderIds);
+
+        if (!empty($allFolderIds)) {
+            // Os paths precisam ser lidos ANTES do deleteMany: a FK
+            // fk_red_folder (ON DELETE CASCADE) apaga as linhas de
+            // resume_experience_documents junto com a pasta, entao depois
+            // disso nao haveria mais como consultar o path de cada arquivo
+            // pra remove-lo do disco.
+            $paths = $this->documents->pathsByFolderIds($allFolderIds);
+            $this->folders->deleteMany($allFolderIds);
+
+            foreach ($paths as $path) {
+                $absolutePath = dirname(__DIR__, 2) . $path;
+
+                if (is_file($absolutePath)) {
+                    unlink($absolutePath);
+                }
+            }
+
+            foreach ($allFolderIds as $folderId) {
+                @rmdir(dirname(__DIR__, 2) . '/storage/uploads/resume-documents/pasta-' . $folderId);
+            }
+        }
+
+        foreach ($documentIds as $documentId) {
+            $document = $this->documents->findById($documentId);
+
+            if ($document === null) {
+                continue;
+            }
+
+            // Ja foi apagado junto com a pasta selecionada acima — tentar de
+            // novo so acharia um registro que ja sumiu.
+            if ((int) ($document['folder_id'] ?? 0) !== 0 && in_array((int) $document['folder_id'], $allFolderIds, true)) {
+                continue;
+            }
+
+            $absolutePath = dirname(__DIR__, 2) . $document['path'];
+
+            if (is_file($absolutePath)) {
+                unlink($absolutePath);
+                @rmdir(dirname($absolutePath));
+            }
+
+            $this->documents->softDelete($documentId);
+        }
+
+        header('Location: ' . $returnUrl);
+    }
+
     public function downloadZip(): void
     {
         $documentIds = array_map('intval', (array) ($_POST['document_ids'] ?? []));

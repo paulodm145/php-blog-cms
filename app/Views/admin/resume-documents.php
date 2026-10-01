@@ -19,7 +19,11 @@
             </ul>
 
             <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-3" id="documents-selection-bar">
-                <span class="text-secondary small">
+                <span class="text-secondary small d-flex align-items-center gap-2">
+                    <label class="form-check d-flex align-items-center gap-1 mb-0" title="Marca todos os documentos e pastas visíveis nesta tela">
+                        <input class="form-check-input mt-0" type="checkbox" id="documents-select-all-visible">
+                        <span class="form-check-label">Selecionar visíveis</span>
+                    </label>
                     <span id="documents-selected-count">0 selecionado(s)</span>
                     <span id="documents-editing-indicator" class="d-none text-primary"> — editando link compartilhado</span>
                 </span>
@@ -27,6 +31,7 @@
                     <button class="btn btn-sm btn-outline-secondary d-none" id="documents-cancel-edit" type="button">Cancelar edição</button>
                     <button class="btn btn-sm btn-outline-secondary" id="documents-clear-selection" type="button">Limpar seleção</button>
                     <button class="btn btn-sm btn-outline-primary" id="documents-zip-trigger" type="button" disabled>Baixar ZIP</button>
+                    <button class="btn btn-sm btn-outline-danger" id="documents-delete-selected-trigger" type="button" disabled>Excluir selecionados</button>
                     <button class="btn btn-sm btn-primary" id="documents-share-trigger" type="button" disabled>Compartilhar selecionados</button>
                 </div>
             </div>

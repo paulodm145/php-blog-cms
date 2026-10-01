@@ -92,6 +92,9 @@
             checkboxes[i].disabled = false;
         }
 
+        var selectAllVisible = document.getElementById('documents-select-all-visible');
+        if (selectAllVisible) { selectAllVisible.checked = false; }
+
         updateSelectionBar();
     }
 
@@ -189,6 +192,7 @@
         var countEl = document.getElementById('documents-selected-count');
         var shareButton = document.getElementById('documents-share-trigger');
         var zipButton = document.getElementById('documents-zip-trigger');
+        var deleteButton = document.getElementById('documents-delete-selected-trigger');
         var documentCount = Object.keys(selectedIds).length;
         var folderCount = Object.keys(selectedFolderIds).length;
 
@@ -198,10 +202,97 @@
                 : documentCount + ' selecionado(s)';
         }
 
-        // Pastas nao entram no link compartilhado (so no ZIP) — por isso o
-        // botao de compartilhar so olha pra documentCount.
+        // Pastas nao entram no link compartilhado (so no ZIP e na exclusao
+        // em massa) — por isso o botao de compartilhar so olha pra documentCount.
         if (shareButton) { shareButton.disabled = documentCount === 0; }
         if (zipButton) { zipButton.disabled = (documentCount + folderCount) === 0; }
+        if (deleteButton) { deleteButton.disabled = (documentCount + folderCount) === 0; }
+    }
+
+    function isElementVisible(el) {
+        return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+    }
+
+    /**
+     * "Visiveis" de proposito (nao "todo documento/pasta que existe na
+     * pagina"): aba inativa (Bootstrap tabs) e painel de accordion fechado
+     * continuam no DOM só com display:none, e offsetWidth/offsetHeight/
+     * getClientRects() e a forma padrao de distinguir isso sem precisar
+     * checar classe por classe (d-none, collapse, tab-pane) uma por uma.
+     */
+    function wireSelectAllVisible() {
+        var selectAll = document.getElementById('documents-select-all-visible');
+        if (!selectAll) { return; }
+
+        selectAll.addEventListener('change', function () {
+            var checked = selectAll.checked;
+            var boxes = document.querySelectorAll('[data-document-checkbox]:not(:disabled), [data-folder-checkbox]:not(:disabled)');
+            var i;
+
+            for (i = 0; i < boxes.length; i++) {
+                if (!isElementVisible(boxes[i]) || boxes[i].checked === checked) { continue; }
+
+                boxes[i].checked = checked;
+                // Dispara o "change" que ja esta cablado em cada checkbox
+                // (delegado no <ul> pros documentos, direto pros de pasta)
+                // em vez de duplicar a logica de atualizar selectedIds/
+                // selectedFolderIds aqui.
+                boxes[i].dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
+
+    function confirmBulkDelete(onConfirmed) {
+        var message = 'Excluir os itens selecionados? Pastas são excluídas com tudo dentro.';
+
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'warning', title: message, showCancelButton: true,
+                confirmButtonText: 'Excluir', cancelButtonText: 'Cancelar', confirmButtonColor: '#b42318'
+            }).then(function (result) {
+                if (result.isConfirmed) { onConfirmed(); }
+            });
+            return;
+        }
+
+        if (confirm(message)) { onConfirmed(); }
+    }
+
+    function wireBulkDelete() {
+        var deleteButton = document.getElementById('documents-delete-selected-trigger');
+        if (!deleteButton) { return; }
+
+        deleteButton.addEventListener('click', function () {
+            confirmBulkDelete(function () {
+                var form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/admin/curriculo/documentos/excluir-selecionados';
+                form.style.display = 'none';
+
+                function appendHidden(name, value) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                Object.keys(selectedIds).forEach(function (id) { appendHidden('document_ids[]', id); });
+                Object.keys(selectedFolderIds).forEach(function (id) { appendHidden('folder_ids[]', id); });
+                appendHidden('return', window.location.pathname + window.location.search);
+
+                // A pagina vai recarregar via navegacao normal do form —
+                // limpa aqui mesmo, sem esperar resposta, senao o contador
+                // ficaria preso com IDs de itens que acabaram de sumir.
+                selectedIds = {};
+                selectedFolderIds = {};
+                saveSelection();
+                saveFolderSelection();
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+        });
     }
 
     function buildDocumentItem(item, selectable) {
@@ -989,5 +1080,7 @@
         wireFolderTreeContextMenu();
         wireFolderCardActions();
         wireZipDownload();
+        wireSelectAllVisible();
+        wireBulkDelete();
     });
 }());
