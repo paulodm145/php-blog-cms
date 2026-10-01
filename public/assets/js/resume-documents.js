@@ -22,6 +22,12 @@
 
     var selectedIds = loadSelection();
 
+    // Quando preenchido, "Compartilhar selecionados" vira "Salvar
+    // alterações" e grava num link ja existente (compartilhamentos/{id}/
+    // editar) em vez de criar um novo (compartilhar).
+    var editingShareId = null;
+    var editingExpiresAt = null;
+
     function notifySuccess(title) {
         if (window.Swal) {
             Swal.fire({
@@ -83,6 +89,48 @@
             documentId = li.getAttribute('data-document-id');
             checkboxes[i].checked = !!selectedIds[documentId];
         }
+    }
+
+    function syncAllCheckboxes() {
+        var managers = document.querySelectorAll('.document-manager');
+        var i;
+
+        for (i = 0; i < managers.length; i++) {
+            syncCheckboxes(managers[i]);
+        }
+    }
+
+    function setEditModeUi(isEditing) {
+        var trigger = document.getElementById('documents-share-trigger');
+        var cancelButton = document.getElementById('documents-cancel-edit');
+        var indicator = document.getElementById('documents-editing-indicator');
+
+        if (trigger) { trigger.textContent = isEditing ? 'Salvar alterações do link' : 'Compartilhar selecionados'; }
+        if (cancelButton) { cancelButton.classList.toggle('d-none', !isEditing); }
+        if (indicator) { indicator.classList.toggle('d-none', !isEditing); }
+    }
+
+    function enterEditMode(shareId, documentIdsCsv, expiresAt) {
+        selectedIds = {};
+
+        (documentIdsCsv || '').split(',').forEach(function (id) {
+            if (id !== '') { selectedIds[id] = true; }
+        });
+
+        saveSelection();
+        syncAllCheckboxes();
+        updateSelectionBar();
+
+        editingShareId = shareId;
+        editingExpiresAt = expiresAt;
+        setEditModeUi(true);
+    }
+
+    function exitEditMode() {
+        editingShareId = null;
+        editingExpiresAt = null;
+        setEditModeUi(false);
+        clearSelection();
     }
 
     function updateSelectionBar() {
@@ -350,6 +398,27 @@
         return match[3] + '/' + match[2] + '/' + match[1] + ' ' + match[4] + ':' + match[5];
     }
 
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                notifySuccess('Link copiado');
+            });
+            return;
+        }
+
+        // Fallback pra navegador sem Clipboard API (ou pagina nao-https):
+        // cria um input temporario so pra dar select()+execCommand('copy').
+        var temp = document.createElement('input');
+        temp.value = text;
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        notifySuccess('Link copiado');
+    }
+
     function computeExpiresAt() {
         var preset = document.getElementById('share-expires-preset');
         var custom = document.getElementById('share-expires-custom');
@@ -381,6 +450,49 @@
             });
         }
 
+        var cancelEditButton = document.getElementById('documents-cancel-edit');
+
+        if (cancelEditButton) {
+            cancelEditButton.addEventListener('click', function () {
+                exitEditMode();
+            });
+        }
+
+        var sharesWrap = document.getElementById('shares-table-wrap');
+
+        function refreshSharesTable() {
+            if (!sharesWrap) { return; }
+
+            fetch('/admin/curriculo/documentos/compartilhamentos')
+                .then(function (response) { return response.text(); })
+                .then(function (html) { sharesWrap.innerHTML = html; });
+        }
+
+        // Delegacao no container, nao nos botoes: a tabela inteira e
+        // substituida (innerHTML) a cada criacao/edicao de link, entao um
+        // listener preso num botao especifico sumiria no refresh seguinte.
+        if (sharesWrap) {
+            sharesWrap.addEventListener('click', function (event) {
+                var copyTarget = event.target.closest ? event.target.closest('[data-copy-share-url]') : null;
+
+                if (copyTarget) {
+                    copyToClipboard(copyTarget.getAttribute('data-copy-share-url'));
+                    return;
+                }
+
+                var editTarget = event.target.closest ? event.target.closest('[data-edit-share]') : null;
+
+                if (editTarget) {
+                    enterEditMode(
+                        editTarget.getAttribute('data-share-id'),
+                        editTarget.getAttribute('data-document-ids'),
+                        editTarget.getAttribute('data-expires-at')
+                    );
+                    notifySuccess('Documentos deste link marcados — ajuste a seleção e clique em "Salvar alterações do link"');
+                }
+            });
+        }
+
         if (!trigger) { return; }
 
         var preset = document.getElementById('share-expires-preset');
@@ -391,13 +503,26 @@
         var resultUrl = document.getElementById('share-result-url');
         var resultExpiry = document.getElementById('share-result-expiry');
         var copyButton = document.getElementById('share-copy-btn');
-        var sharesWrap = document.getElementById('shares-table-wrap');
+        var modalTitle = document.getElementById('share-modal-title');
         var modalEl = document.getElementById('share-modal');
         var modal = window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
 
         trigger.addEventListener('click', function () {
             if (form) { form.classList.remove('d-none'); }
             if (result) { result.classList.add('d-none'); }
+            if (modalTitle) { modalTitle.textContent = editingShareId ? 'Editar link compartilhado' : 'Compartilhar documentos'; }
+
+            // Pre-preenche com a expiracao atual do link, em "Personalizado",
+            // em vez de deixar o preset padrao de 7 dias silenciosamente
+            // sobrescrever uma validade que o admin nao pediu pra mudar.
+            if (editingShareId && preset && custom && editingExpiresAt) {
+                preset.value = 'custom';
+                custom.classList.remove('d-none');
+                custom.value = editingExpiresAt.replace(' ', 'T').slice(0, 16);
+            }
+
+            if (generateButton) { generateButton.textContent = editingShareId ? 'Salvar' : 'Gerar link'; }
+
             if (modal) { modal.show(); }
         });
 
@@ -422,7 +547,12 @@
                 });
                 formData.append('expires_at', expiresAt);
 
-                fetch('/admin/curriculo/documentos/compartilhar', { method: 'POST', body: formData })
+                var wasEditing = editingShareId;
+                var endpoint = wasEditing
+                    ? '/admin/curriculo/documentos/compartilhamentos/' + wasEditing + '/editar'
+                    : '/admin/curriculo/documentos/compartilhar';
+
+                fetch(endpoint, { method: 'POST', body: formData })
                     .then(function (response) { return response.json(); })
                     .then(function (payload) {
                         if (payload.error) {
@@ -434,20 +564,23 @@
                         if (resultExpiry) { resultExpiry.textContent = formatDateTime(payload.expires_at); }
                         if (form) { form.classList.add('d-none'); }
                         if (result) { result.classList.remove('d-none'); }
-                        // Limpa a selecao: sem isso, um segundo clique em
-                        // "Compartilhar" (sem querer, ou achando que o
-                        // primeiro link nao tinha saido) gerava um SEGUNDO
-                        // link ativo sobre os mesmos documentos.
-                        clearSelection();
 
-                        if (sharesWrap) {
-                            fetch('/admin/curriculo/documentos/compartilhamentos')
-                                .then(function (response) { return response.text(); })
-                                .then(function (html) { sharesWrap.innerHTML = html; });
+                        if (wasEditing) {
+                            // exitEditMode() ja chama clearSelection() — nao
+                            // precisa fazer os dois.
+                            exitEditMode();
+                        } else {
+                            // Limpa a selecao: sem isso, um segundo clique em
+                            // "Compartilhar" (sem querer, ou achando que o
+                            // primeiro link nao tinha saido) gerava um SEGUNDO
+                            // link ativo sobre os mesmos documentos.
+                            clearSelection();
                         }
+
+                        refreshSharesTable();
                     })
                     .catch(function () {
-                        notifyError('Falha ao gerar o link');
+                        notifyError(wasEditing ? 'Falha ao salvar as alterações' : 'Falha ao gerar o link');
                     });
             });
         }
@@ -456,15 +589,7 @@
             copyButton.addEventListener('click', function () {
                 if (!resultUrl) { return; }
 
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(resultUrl.value).then(function () {
-                        notifySuccess('Link copiado');
-                    });
-                    return;
-                }
-
-                resultUrl.select();
-                document.execCommand('copy');
+                copyToClipboard(resultUrl.value);
             });
         }
     }

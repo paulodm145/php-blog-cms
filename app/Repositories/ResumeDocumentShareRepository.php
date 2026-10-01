@@ -174,7 +174,7 @@ class ResumeDocumentShareRepository
         // ja o esconde da pagina publica — a contagem batia com o que o
         // link prometia, nao com o que ele realmente serve.
         return $this->database->fetchAll(
-            'SELECT s.*, COUNT(d.id) AS document_count
+            'SELECT s.*, COUNT(d.id) AS document_count, GROUP_CONCAT(d.id) AS document_ids
              FROM resume_document_shares s
              LEFT JOIN resume_document_share_items si ON si.share_id = s.id
              LEFT JOIN resume_experience_documents d ON d.id = si.document_id AND d.deleted_at IS NULL

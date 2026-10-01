@@ -19,8 +19,12 @@
             </ul>
 
             <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-3" id="documents-selection-bar">
-                <span class="text-secondary small"><span id="documents-selected-count">0</span> selecionado(s)</span>
+                <span class="text-secondary small">
+                    <span id="documents-selected-count">0</span> selecionado(s)
+                    <span id="documents-editing-indicator" class="d-none text-primary"> — editando link compartilhado</span>
+                </span>
                 <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary d-none" id="documents-cancel-edit" type="button">Cancelar edição</button>
                     <button class="btn btn-sm btn-outline-secondary" id="documents-clear-selection" type="button">Limpar seleção</button>
                     <button class="btn btn-sm btn-primary" id="documents-share-trigger" type="button" disabled>Compartilhar selecionados</button>
                 </div>
@@ -67,7 +71,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">Compartilhar documentos</h5>
+                            <h5 class="modal-title" id="share-modal-title">Compartilhar documentos</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
