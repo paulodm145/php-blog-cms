@@ -44,6 +44,58 @@ class ResumeDocumentShareRepository
         return ['id' => $shareId, 'token' => $token, 'expires_at' => $expiresAt];
     }
 
+    public function find(int $id): ?array
+    {
+        return $this->database->fetch('SELECT * FROM resume_document_shares WHERE id = :id LIMIT 1', ['id' => $id]);
+    }
+
+    public function documentIdsForShare(int $shareId): array
+    {
+        $rows = $this->database->fetchAll(
+            'SELECT document_id FROM resume_document_share_items WHERE share_id = :share_id',
+            ['share_id' => $shareId]
+        );
+
+        return array_map('intval', array_column($rows, 'document_id'));
+    }
+
+    /**
+     * Substitui a expiracao e a lista de documentos de um link ja existente
+     * (apaga os share_items antigos e insere os novos, numa unica
+     * transacao) — o token nunca muda, entao o link continua o mesmo pra
+     * quem ja o recebeu.
+     */
+    public function update(int $shareId, array $documentIds, string $expiresAt): void
+    {
+        $pdo = $this->database->connection();
+
+        $pdo->beginTransaction();
+
+        try {
+            $this->database->execute(
+                'UPDATE resume_document_shares SET expires_at = :expires_at WHERE id = :id',
+                ['expires_at' => $expiresAt, 'id' => $shareId]
+            );
+
+            $this->database->execute(
+                'DELETE FROM resume_document_share_items WHERE share_id = :share_id',
+                ['share_id' => $shareId]
+            );
+
+            foreach ($documentIds as $documentId) {
+                $this->database->execute(
+                    'INSERT INTO resume_document_share_items (share_id, document_id) VALUES (:share_id, :document_id)',
+                    ['share_id' => $shareId, 'document_id' => $documentId]
+                );
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $exception) {
+            $pdo->rollBack();
+            throw $exception;
+        }
+    }
+
     public function findValidByToken(string $token): ?array
     {
         // Compara contra o relogio do PHP (o mesmo usado em store() pra
