@@ -800,6 +800,87 @@
     }
 
     /**
+     * Busca so o HTML da arvore (igual refreshSharesTable() faz com a
+     * tabela de links) e troca o conteudo do painel, sem navegar — mantem
+     * o resto da tela (documentos, aba ativa, scroll) intacto. Se
+     * expandFolderId for passado, forca aquele toggle aberto depois de
+     * trocar o HTML, ja que a pasta recem-criada pode nao estar na cadeia
+     * de ancestrais da pasta atualmente aberta (que e o unico criterio que
+     * o backend usa pra decidir o que comeca expandido).
+     */
+    function refreshFolderTree(expandFolderId) {
+        var panel = document.querySelector('[data-folder-tree-panel]');
+        if (!panel) { return Promise.resolve(); }
+
+        var currentFolderId = new URLSearchParams(window.location.search).get('folder_id') || '';
+
+        return fetch('/admin/curriculo/documentos/pastas/arvore?folder_id=' + currentFolderId)
+            .then(function (response) { return response.text(); })
+            .then(function (html) {
+                panel.innerHTML = html;
+                wireFolderTreeDropTargets();
+
+                if (expandFolderId) {
+                    var toggle = panel.querySelector('[data-bs-target="#folder-tree-children-' + expandFolderId + '"]');
+                    var collapseEl = document.getElementById('folder-tree-children-' + expandFolderId);
+
+                    if (toggle) { toggle.setAttribute('aria-expanded', 'true'); }
+                    if (collapseEl) { collapseEl.classList.add('show'); }
+                }
+            });
+    }
+
+    function createFolderViaFetch(parentFolderId, name) {
+        var formData = new FormData();
+        formData.append('parent_id', parentFolderId || '');
+        formData.append('name', name);
+
+        return fetch('/admin/curriculo/documentos/pastas/criar-ajax', { method: 'POST', body: formData })
+            .then(function (response) {
+                return response.json().then(function (payload) {
+                    if (!response.ok) {
+                        throw new Error(payload.error || 'Falha ao criar a pasta');
+                    }
+
+                    return payload;
+                });
+            });
+    }
+
+    function promptCreateFolder(parentFolderId) {
+        if (!window.Swal) {
+            var name = prompt('Nome da nova pasta:');
+            if (!name) { return; }
+
+            createFolderViaFetch(parentFolderId, name.trim())
+                .then(function () { return refreshFolderTree(parentFolderId); })
+                .then(function () { notifySuccess('Pasta criada'); })
+                .catch(function (error) { notifyError('Falha ao criar a pasta', error.message); });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Nova pasta',
+            input: 'text',
+            inputLabel: 'Nome da pasta',
+            inputPlaceholder: 'Ex.: Contratos 2026',
+            showCancelButton: true,
+            confirmButtonText: 'Criar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: function (value) {
+                return !value || !value.trim() ? 'Informe um nome' : undefined;
+            }
+        }).then(function (result) {
+            if (!result.isConfirmed) { return; }
+
+            createFolderViaFetch(parentFolderId, result.value.trim())
+                .then(function () { return refreshFolderTree(parentFolderId); })
+                .then(function () { notifySuccess('Pasta criada'); })
+                .catch(function (error) { notifyError('Falha ao criar a pasta', error.message); });
+        });
+    }
+
+    /**
      * Troca o nome exibido (dentro de [data-folder-link]) por um <input>
      * editavel no proprio lugar, sem navegar pra pagina de renomear. O link
      * so fica escondido (d-none), nunca removido, pra nao perder nenhum
@@ -920,9 +1001,8 @@
         }
     }
 
-    function wireFolderDragAndDrop() {
+    function wireFolderDragSources() {
         var cards = document.querySelectorAll('[data-draggable-folder-id]');
-        var dropTargets = document.querySelectorAll('[data-drop-folder-id]');
         var i;
 
         for (i = 0; i < cards.length; i++) {
@@ -931,6 +1011,15 @@
                 event.dataTransfer.setData('text/plain', this.getAttribute('data-draggable-folder-id'));
             });
         }
+    }
+
+    // Reaplicavel sozinha: depois que a arvore e recarregada via
+    // refreshFolderTree() (innerHTML novo), as linhas antigas (e seus
+    // listeners) somem junto — precisa recablar so os alvos de drop, sem
+    // duplicar os listeners dos cards (que nao mudaram).
+    function wireFolderTreeDropTargets() {
+        var dropTargets = document.querySelectorAll('[data-drop-folder-id]');
+        var i;
 
         for (i = 0; i < dropTargets.length; i++) {
             dropTargets[i].addEventListener('dragover', function (event) {
@@ -954,6 +1043,11 @@
                 moveFolderViaDrag(draggedId, targetFolderId);
             });
         }
+    }
+
+    function wireFolderDragAndDrop() {
+        wireFolderDragSources();
+        wireFolderTreeDropTargets();
     }
 
     function wireFolderTreeContextMenu() {
@@ -1007,7 +1101,7 @@
 
         if (newFolderButton) {
             newFolderButton.addEventListener('click', function () {
-                window.location.href = '/admin/curriculo/documentos/pastas/criar?parent_id=' + targetFolderId;
+                promptCreateFolder(targetFolderId);
             });
         }
 

@@ -53,6 +53,45 @@ class AdminResumeDocumentFolderController
         header('Location: ' . $this->folderUrl($parentId));
     }
 
+    /**
+     * Cria a pasta via fetch (sem navegar) e devolve so o JSON — usado pelo
+     * "Nova pasta aqui" do menu de contexto da arvore, que em seguida
+     * re-busca treePartial() pra atualizar a arvore no lugar.
+     */
+    public function storeAjax(): void
+    {
+        header('Content-Type: application/json');
+
+        $parentId = $this->folders->resolveId($_POST['parent_id'] ?? null);
+        $name = trim((string) ($_POST['name'] ?? ''));
+
+        if ($name === '' || mb_strlen($name) > self::NAME_MAX_LENGTH) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Informe um nome de pasta com até ' . self::NAME_MAX_LENGTH . ' caracteres.']);
+            return;
+        }
+
+        $id = $this->folders->create($parentId, $name);
+
+        echo json_encode(['id' => $id, 'name' => $name]);
+    }
+
+    /**
+     * So a arvore (sem o resto da pagina) — usada pra atualizar o menu
+     * lateral depois de criar uma pasta pelo botao direito, sem recarregar
+     * a tela inteira. Mesmo padrao do index() de
+     * AdminResumeDocumentShareController pra tabela de links.
+     */
+    public function treePartial(): void
+    {
+        $currentFolderId = $this->folders->resolveId($_GET['folder_id'] ?? null);
+
+        View::render('admin/partials/resume-document-folder-tree', [
+            'allFolders' => $this->folders->all(),
+            'currentFolderId' => $currentFolderId,
+        ]);
+    }
+
     public function renameForm(string $id): void
     {
         $folder = $this->folders->find((int) $id);

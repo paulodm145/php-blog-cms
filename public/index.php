@@ -199,6 +199,8 @@ $router->post('/admin/curriculo/documentos/excluir-selecionados', [AdminResumeDo
 $router->get('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFileForm']);
 $router->post('/admin/curriculo/documentos/novo-arquivo', [AdminResumeDocumentController::class, 'createTextFile']);
 $router->get('/admin/curriculo/documentos/pastas/criar', [AdminResumeDocumentFolderController::class, 'createForm']);
+$router->get('/admin/curriculo/documentos/pastas/arvore', [AdminResumeDocumentFolderController::class, 'treePartial']);
+$router->post('/admin/curriculo/documentos/pastas/criar-ajax', [AdminResumeDocumentFolderController::class, 'storeAjax']);
 $router->post('/admin/curriculo/documentos/pastas', [AdminResumeDocumentFolderController::class, 'store']);
 $router->get('/admin/curriculo/documentos/pastas/{id}/renomear', [AdminResumeDocumentFolderController::class, 'renameForm']);
 $router->post('/admin/curriculo/documentos/pastas/{id}/renomear', [AdminResumeDocumentFolderController::class, 'rename']);
