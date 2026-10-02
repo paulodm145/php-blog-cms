@@ -472,6 +472,26 @@
         var input = manager.querySelector('[data-upload-input]');
         var trigger = manager.querySelector('[data-upload-trigger]');
         var list = manager.querySelector('[data-document-list]');
+        var selectAllDocuments = manager.querySelector('[data-select-all-documents]');
+
+        if (selectAllDocuments) {
+            selectAllDocuments.addEventListener('change', function () {
+                var checked = selectAllDocuments.checked;
+                // Consulta ao vivo (nao cacheada antes do upload) — um
+                // documento enviado depois do carregamento da pagina entra
+                // automaticamente na proxima vez que "Selecionar todos" for
+                // clicado, sem precisar recablar nada.
+                var boxes = manager.querySelectorAll('[data-document-checkbox]:not(:disabled)');
+                var i;
+
+                for (i = 0; i < boxes.length; i++) {
+                    if (boxes[i].checked === checked) { continue; }
+
+                    boxes[i].checked = checked;
+                    boxes[i].dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
 
         if (trigger && input) {
             trigger.addEventListener('click', function () { input.click(); });
@@ -960,6 +980,27 @@
         if (confirm('Excluir esta pasta e tudo dentro dela?')) { onConfirmed(); }
     }
 
+    function wireSelectAllFolders() {
+        var selectAll = document.querySelector('[data-select-all-folders]');
+        if (!selectAll) { return; }
+
+        selectAll.addEventListener('change', function () {
+            var checked = selectAll.checked;
+            // So existe uma listagem de subpastas visivel por vez (a da
+            // pasta atual), entao document.querySelectorAll aqui nao
+            // atravessa pra outra pasta por engano.
+            var boxes = document.querySelectorAll('[data-folder-checkbox]:not(:disabled)');
+            var i;
+
+            for (i = 0; i < boxes.length; i++) {
+                if (boxes[i].checked === checked) { continue; }
+
+                boxes[i].checked = checked;
+                boxes[i].dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
+
     function wireFolderCardActions() {
         var cards = document.querySelectorAll('[data-draggable-folder-id]');
         var i;
@@ -1173,6 +1214,7 @@
         wireFolderDragAndDrop();
         wireFolderTreeContextMenu();
         wireFolderCardActions();
+        wireSelectAllFolders();
         wireZipDownload();
         wireSelectAllVisible();
         wireBulkDelete();

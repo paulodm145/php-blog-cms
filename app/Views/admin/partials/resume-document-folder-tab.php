@@ -26,7 +26,15 @@
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <span class="text-secondary small"><?= count($folderChildren) ?> subpasta(s)</span>
+    <span class="text-secondary small d-flex align-items-center gap-2">
+        <?php if (!empty($folderChildren)): ?>
+            <label class="form-check d-flex align-items-center gap-1 mb-0" title="Selecionar todas as subpastas (com tudo dentro) pra ZIP ou exclusão em massa">
+                <input class="form-check-input mt-0" type="checkbox" data-select-all-folders>
+                <span class="form-check-label">Selecionar todas</span>
+            </label>
+        <?php endif; ?>
+        <?= count($folderChildren) ?> subpasta(s)
+    </span>
     <div class="d-flex gap-2">
         <a class="btn btn-sm btn-outline-secondary" href="/admin/curriculo/documentos/novo-arquivo?folder_id=<?= $currentFolderId !== null ? (int) $currentFolderId : '' ?>">Novo arquivo</a>
         <a class="btn btn-sm btn-outline-primary" href="/admin/curriculo/documentos/pastas/criar?parent_id=<?= $currentFolderId !== null ? (int) $currentFolderId : '' ?>">Nova pasta</a>

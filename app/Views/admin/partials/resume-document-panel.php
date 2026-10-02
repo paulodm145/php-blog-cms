@@ -25,6 +25,12 @@ $documentReturnUrl = $group['returnUrl'] ?? '/admin/curriculo/documentos';
     <div class="progress mb-3 d-none" data-upload-progress-wrap style="height:6px">
         <div class="progress-bar" data-upload-progress-bar style="width:0%"></div>
     </div>
+    <?php if ($documentSelectable): ?>
+        <label class="form-check d-flex align-items-center gap-1 mb-2" title="Selecionar todos os documentos desta lista">
+            <input class="form-check-input mt-0" type="checkbox" data-select-all-documents>
+            <span class="form-check-label text-secondary small">Selecionar todos</span>
+        </label>
+    <?php endif; ?>
     <ul class="list-group document-list mb-2" data-document-list>
         <?php foreach ($documents as $document): ?>
             <?php require __DIR__ . '/resume-document-item.php'; ?>
